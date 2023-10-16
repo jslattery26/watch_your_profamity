@@ -1,10 +1,9 @@
 {
   "name": "watch_your_profamity",
   "version": "1.0.0",
-  "description": "Remove profanity from project",
+  "description": "Remove profanity from projectg",
   "main": "index.js",
   "author": "jslattery26",
-  "type": "module",
   "license": "MIT",
   "dependencies": {
     "@actions/core": "^1.10.0"
