@@ -1,9 +1,10 @@
 {
-  "name": "find-and-replace-string",
+  "name": "watch_your_profamity",
   "version": "1.0.0",
-  "description": "Find-and-replace on a string",
+  "description": "Remove profanity from project",
   "main": "index.js",
-  "author": "Kishyr Ramdial <kishyr@mad.app>",
+  "author": "jslattery26",
+  "type": "module",
   "license": "MIT",
   "dependencies": {
     "@actions/core": "^1.10.0"
