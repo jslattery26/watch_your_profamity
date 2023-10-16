@@ -6,7 +6,7 @@ branding:
   color: purple
 inputs:
   replace:
-    description: The new string to be replaced
+    description: Replacement word (defaults to 'cute')
     required: false
   include:
     description: A glob of files to include in our find and replace

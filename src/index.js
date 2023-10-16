@@ -7,7 +7,7 @@ const {
   RegExpMatcher,
   TextCensor,
   englishDataset,
-  //   englishRecommendedTransformers,
+  englishRecommendedTransformers,
 } = require('obscenity')
 
 async function run() {
@@ -18,21 +18,18 @@ async function run() {
 
     const matcher = new RegExpMatcher({
       ...englishDataset.build(),
-      //   ...englishRecommendedTransformers,
+      ...englishRecommendedTransformers,
     })
 
-    let find = 'fuck'
     let replace = ActionUtils.getInput('replace', { required: false })
     let include = ActionUtils.getInputAsArray('include', { required: false })
     let exclude = ActionUtils.getInputAsArray('exclude', { required: false })
 
-    find = new RegExp(find, 'gm')
     include = ArrayUtils.split(include, ',')
     exclude = ArrayUtils.split(exclude, ',')
 
     core.info(`include: ${JSON.stringify(include)}`)
     core.info(`exclude: ${JSON.stringify(exclude)}`)
-    core.info(`find: ${find}`)
     core.info(`replace: ${replace}`)
 
     const files = FileUtils.searchFiles(include, exclude)
@@ -40,7 +37,7 @@ async function run() {
     core.info(`Found ${files.length} file(s). Checking them out:`)
 
     let modifiedFiles = 0
-    const fudgeStrategy = () => 'cute'
+    const fudgeStrategy = () => replace
     const censor = new TextCensor().setStrategy(fudgeStrategy)
 
     files.forEach((file) => {
