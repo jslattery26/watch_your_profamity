@@ -1,49 +1,51 @@
-const core = require('@actions/core')
-
-const FileUtils = require('./utils/FileUtils')
-const ActionUtils = require('./utils/ActionUtils')
-const ArrayUtils = require('./utils/ArrayUtils')
-const {
-  RegExpMatcher,
-  TextCensor,
-  englishDataset,
-  englishRecommendedTransformers,
-} = require('obscenity')
+import { info, setFailed, setOutput } from '@actions/core'
+import { RegExpMatcher, TextCensor, englishDataset } from 'obscenity'
+import { getInput, getInputAsArray } from './utils/ActionUtils'
+import { split } from './utils/ArrayUtils'
+import {
+  isWorkspaceEmpty,
+  readContent,
+  searchFiles,
+  writeContent,
+} from './utils/FileUtils'
 
 async function run() {
   try {
-    if (FileUtils.isWorkspaceEmpty()) {
+    if (isWorkspaceEmpty()) {
       throw new Error('Workspace is empty')
     }
 
     const matcher = new RegExpMatcher({
       ...englishDataset.build(),
-      ...englishRecommendedTransformers,
+      //   ...englishRecommendedTransformers,
     })
 
-    let replace = ActionUtils.getInput('replace', { required: false })
-    let include = ActionUtils.getInputAsArray('include', { required: false })
-    let exclude = ActionUtils.getInputAsArray('exclude', { required: false })
+    let replace = getInput('replace', { required: false })
+    if (!replace) {
+      replace = 'cute'
+    }
+    let include = getInputAsArray('include', { required: false })
+    let exclude = getInputAsArray('exclude', { required: false })
 
-    include = ArrayUtils.split(include, ',')
-    exclude = ArrayUtils.split(exclude, ',')
+    include = split(include, ',')
+    exclude = split(exclude, ',')
 
-    core.info(`include: ${JSON.stringify(include)}`)
-    core.info(`exclude: ${JSON.stringify(exclude)}`)
-    core.info(`replace: ${replace}`)
+    info(`include: ${JSON.stringify(include)}`)
+    info(`exclude: ${JSON.stringify(exclude)}`)
+    info(`replace: ${replace}`)
 
-    const files = FileUtils.searchFiles(include, exclude)
+    const files = searchFiles(include, exclude)
 
-    core.info(`Found ${files.length} file(s). Checking them out:`)
+    info(`Found ${files.length} file(s). Checking them out:`)
 
     let modifiedFiles = 0
     const fudgeStrategy = () => replace
     const censor = new TextCensor().setStrategy(fudgeStrategy)
 
     files.forEach((file) => {
-      core.info(`Processing: ${file}`)
+      info(`Processing: ${file}`)
 
-      let content = FileUtils.readContent(file)
+      let content = readContent(file)
 
       const input = content
       const matches = matcher.getAllMatches(input)
@@ -53,14 +55,14 @@ async function run() {
         modifiedFiles++
       }
 
-      FileUtils.writeContent(file, newContent)
+      writeContent(file, newContent)
     })
 
-    core.info('Done. All files checked')
+    info('Done. All files checked')
 
-    core.setOutput('modifiedFiles', modifiedFiles)
+    setOutput('modifiedFiles', modifiedFiles)
   } catch (error) {
-    core.setFailed(error.message)
+    setFailed(error.message)
   }
 }
 

@@ -7193,64 +7193,57 @@ module.exports = class ArrayUtils {
 /***/ 4056:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-const fs = __nccwpck_require__(7147);
-const path = __nccwpck_require__(1017);
-const process = __nccwpck_require__(7282);
-const { glob } = __nccwpck_require__(3277);
+const fs = __nccwpck_require__(7147)
+const path = __nccwpck_require__(1017)
+const process = __nccwpck_require__(7282)
+const { glob } = __nccwpck_require__(3277)
 
 module.exports = class FileUtils {
+  static isWorkspaceEmpty() {
+    return FileUtils.isEmpty(FileUtils.getWorkspacePath())
+  }
 
-    static isWorkspaceEmpty() {
+  static getWorkspacePath() {
+    return process.env['GITHUB_WORKSPACE'] || ''
+  }
 
-        return FileUtils.isEmpty(FileUtils.getWorkspacePath());
+  static exists(fileOrPath) {
+    return fs.existsSync(fileOrPath)
+  }
+
+  static searchFiles(pattern = [], ignore = []) {
+    pattern = Array.isArray(pattern) ? pattern : [pattern]
+    ignore = Array.isArray(ignore) ? ignore : [ignore]
+
+    const options = {
+      cwd: FileUtils.getWorkspacePath(),
+      ignore: ignore,
     }
 
-    static getWorkspacePath() {
+    return glob.sync(pattern, options)
+  }
 
-        return process.env["GITHUB_WORKSPACE"] || "";
+  static isEmpty(path) {
+    if (!FileUtils.exists(path)) {
+      throw new Error(`${path} does not exist`)
     }
 
-    static exists(fileOrPath) {
+    return fs.readdirSync(path).length === 0
+  }
 
-        return fs.existsSync(fileOrPath);
-    }
+  static readContent(file, encoding = 'utf-8') {
+    const filePath = path.join(FileUtils.getWorkspacePath(), file)
 
-    static searchFiles(pattern = [], ignore = []) {
+    return fs.readFileSync(filePath, { encoding })
+  }
 
-        pattern = Array.isArray(pattern) ? pattern : [pattern];
-        ignore = Array.isArray(ignore) ? ignore : [ignore];
+  static writeContent(file, content, encoding = 'utf-8') {
+    const filePath = path.join(FileUtils.getWorkspacePath(), file)
 
-        const options = {
-            cwd: FileUtils.getWorkspacePath(),
-            ignore: ignore
-        };
-
-        return glob.sync(pattern, options);
-    }
-
-    static isEmpty(path) {
-
-        if (!FileUtils.exists(path)) {
-            throw new Error(`${path} does not exist`);
-        }
-
-        return fs.readdirSync(path).length === 0;
-    }
-
-    static readContent(file, encoding = "utf-8") {
-
-        const filePath = path.join(FileUtils.getWorkspacePath(), file);
-
-        return fs.readFileSync(filePath, { encoding });
-    }
-
-    static writeContent(file, content, encoding = "utf-8") {
-
-        const filePath = path.join(FileUtils.getWorkspacePath(), file);
-
-        return fs.writeFileSync(filePath, content, encoding);
-    }
+    return fs.writeFileSync(filePath, content, encoding)
+  }
 }
+
 
 /***/ }),
 
@@ -14063,16 +14056,58 @@ exports.LRUCache = LRUCache;
 /******/ 	}
 /******/ 	
 /************************************************************************/
+/******/ 	/* webpack/runtime/compat get default export */
+/******/ 	(() => {
+/******/ 		// getDefaultExport function for compatibility with non-harmony modules
+/******/ 		__nccwpck_require__.n = (module) => {
+/******/ 			var getter = module && module.__esModule ?
+/******/ 				() => (module['default']) :
+/******/ 				() => (module);
+/******/ 			__nccwpck_require__.d(getter, { a: getter });
+/******/ 			return getter;
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/define property getters */
+/******/ 	(() => {
+/******/ 		// define getter functions for harmony exports
+/******/ 		__nccwpck_require__.d = (exports, definition) => {
+/******/ 			for(var key in definition) {
+/******/ 				if(__nccwpck_require__.o(definition, key) && !__nccwpck_require__.o(exports, key)) {
+/******/ 					Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
+/******/ 				}
+/******/ 			}
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/hasOwnProperty shorthand */
+/******/ 	(() => {
+/******/ 		__nccwpck_require__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/make namespace object */
+/******/ 	(() => {
+/******/ 		// define __esModule on exports
+/******/ 		__nccwpck_require__.r = (exports) => {
+/******/ 			if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
+/******/ 				Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
+/******/ 			}
+/******/ 			Object.defineProperty(exports, '__esModule', { value: true });
+/******/ 		};
+/******/ 	})();
+/******/ 	
 /******/ 	/* webpack/runtime/compat */
 /******/ 	
 /******/ 	if (typeof __nccwpck_require__ !== 'undefined') __nccwpck_require__.ab = __dirname + "/";
 /******/ 	
 /************************************************************************/
 var __webpack_exports__ = {};
-// This entry need to be wrapped in an IIFE because it need to be isolated against other modules in the chunk.
+// This entry need to be wrapped in an IIFE because it need to be in strict mode.
 (() => {
-const core = __nccwpck_require__(2186)
-
+"use strict";
+__nccwpck_require__.r(__webpack_exports__);
+/* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(2186);
+/* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__nccwpck_require__.n(_actions_core__WEBPACK_IMPORTED_MODULE_0__);
 const FileUtils = __nccwpck_require__(4056)
 const ActionUtils = __nccwpck_require__(778)
 const ArrayUtils = __nccwpck_require__(1970)
@@ -14082,6 +14117,8 @@ const {
   englishDataset,
   englishRecommendedTransformers,
 } = __nccwpck_require__(8795)
+
+;
 
 async function run() {
   try {
@@ -14094,30 +14131,27 @@ async function run() {
       ...englishRecommendedTransformers,
     })
 
-    let find = 'fuck'
     let replace = ActionUtils.getInput('replace', { required: false })
     let include = ActionUtils.getInputAsArray('include', { required: false })
     let exclude = ActionUtils.getInputAsArray('exclude', { required: false })
 
-    find = new RegExp(find, 'gm')
     include = ArrayUtils.split(include, ',')
     exclude = ArrayUtils.split(exclude, ',')
 
-    core.info(`include: ${JSON.stringify(include)}`)
-    core.info(`exclude: ${JSON.stringify(exclude)}`)
-    core.info(`find: ${find}`)
-    core.info(`replace: ${replace}`)
+    ;(0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.info)(`include: ${JSON.stringify(include)}`)
+    ;(0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.info)(`exclude: ${JSON.stringify(exclude)}`)
+    ;(0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.info)(`replace: ${replace}`)
 
     const files = FileUtils.searchFiles(include, exclude)
 
-    core.info(`Found ${files.length} file(s). Checking them out:`)
+    ;(0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.info)(`Found ${files.length} file(s). Checking them out:`)
 
     let modifiedFiles = 0
-    const fudgeStrategy = () => 'cute'
+    const fudgeStrategy = () => replace
     const censor = new TextCensor().setStrategy(fudgeStrategy)
 
     files.forEach((file) => {
-      core.info(`Processing: ${file}`)
+      ;(0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.info)(`Processing: ${file}`)
 
       let content = FileUtils.readContent(file)
 
@@ -14132,11 +14166,11 @@ async function run() {
       FileUtils.writeContent(file, newContent)
     })
 
-    core.info('Done. All files checked')
+    ;(0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.info)('Done. All files checked')
 
-    core.setOutput('modifiedFiles', modifiedFiles)
+    ;(0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.setOutput)('modifiedFiles', modifiedFiles)
   } catch (error) {
-    core.setFailed(error.message)
+    (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed)(error.message)
   }
 }
 
