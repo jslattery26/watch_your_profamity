@@ -14,3 +14,5 @@ jobs:
           source: ${{ github.ref }}
           find: 'refs/heads/'
           replace: ''
+      - name: Get the above output
+        run: echo "The replaced value is ${{ steps.watchyourprofamity.outputs.value }}"
