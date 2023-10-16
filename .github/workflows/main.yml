@@ -8,20 +8,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Run find-and-replace to remove refs/heads/
-        uses: jslattery26/watch_your_profamity@3
+        uses: jslattery26/watch_your_profamity@0.0.2
         id: watchyourprofamity
         with:
           source: ${{ github.ref }}
           find: 'refs/heads/'
           replace: ''
-      - name: Get the above output
-        run: echo "The replaced value is ${{ steps.watchyourprofamity.outputs.value }}"
-      - name: Run find-and-replace to remove slashes
-        uses: jslattery26/watch_your_profamity@1
-        id: watchyourprofamity2
-        with:
-          source: ${{ steps.watchyourprofamity.outputs.value }}
-          find: '/'
-          replace: '-'
-      - name: Get the final output
-        run: echo "The replaced value is ${{ steps.watchyourprofamity2.outputs.value }}"
