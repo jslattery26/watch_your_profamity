@@ -1,6 +1,5 @@
-# Find and replace strings
-
-This action executes find-and-replace on a given string (hint: use `${{ github.ref }}` to get your branch name and apply this on it for use in another action). 
+# Watch your profamity
+This action executes find-and-replace on profane words in your project
 
 ## Inputs
 

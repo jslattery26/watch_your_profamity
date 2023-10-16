@@ -3,7 +3,7 @@ description: 'Removes all profanity from your project'
 author: 'Jack Slattery'
 branding:
   color: purple
-  icon: copy
+  icon: life-buoy
 inputs:
   source:
     description: 'The text you want to run this action on'
