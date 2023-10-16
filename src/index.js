@@ -3,12 +3,23 @@ const core = require('@actions/core')
 const FileUtils = require('./utils/FileUtils')
 const ActionUtils = require('./utils/ActionUtils')
 const ArrayUtils = require('./utils/ArrayUtils')
+const {
+  RegExpMatcher,
+  TextCensor,
+  englishDataset,
+  englishRecommendedTransformers,
+} = require('obscenity')
 
 async function run() {
   try {
     if (FileUtils.isWorkspaceEmpty()) {
       throw new Error('Workspace is empty')
     }
+
+    const matcher = new RegExpMatcher({
+      ...englishDataset.build(),
+      ...englishRecommendedTransformers,
+    })
 
     let find = 'fuck'
     let replace = ActionUtils.getInput('replace', { required: false })
@@ -29,12 +40,17 @@ async function run() {
     core.info(`Found ${files.length} file(s). Checking them out:`)
 
     let modifiedFiles = 0
+    const fudgeStrategy = () => 'cute'
+    const censor = new TextCensor().setStrategy(fudgeStrategy)
 
     files.forEach((file) => {
       core.info(`Processing: ${file}`)
 
       let content = FileUtils.readContent(file)
-      let newContent = content.replace(find, replace)
+
+      const input = content
+      const matches = matcher.getAllMatches(input)
+      const newContent = censor.applyTo(input, matches)
 
       if (content != newContent) {
         modifiedFiles++
