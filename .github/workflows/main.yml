@@ -1,27 +1,27 @@
 on: [push]
 
 jobs:
-  find-and-replace-job:
+  watch-your-profamity-job:
     runs-on: ubuntu-latest
-    name: 'Find and replace on a string'
+    name: 'Get rid of all that profanity!'
     steps:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Run find-and-replace to remove refs/heads/
-        uses: mad9000/actions-find-and-replace-string@3
-        id: findandreplace
+        uses: jslattery26/watch_your_profamity@3
+        id: watchyourprofamity
         with:
           source: ${{ github.ref }}
           find: 'refs/heads/'
           replace: ''
       - name: Get the above output
-        run: echo "The replaced value is ${{ steps.findandreplace.outputs.value }}"
+        run: echo "The replaced value is ${{ steps.watchyourprofamity.outputs.value }}"
       - name: Run find-and-replace to remove slashes
-        uses: mad9000/actions-find-and-replace-string@1
-        id: findandreplace2
+        uses: jslattery26/watch_your_profamity@1
+        id: watchyourprofamity2
         with:
-          source: ${{ steps.findandreplace.outputs.value }}
+          source: ${{ steps.watchyourprofamity.outputs.value }}
           find: '/'
           replace: '-'
       - name: Get the final output
-        run: echo "The replaced value is ${{ steps.findandreplace2.outputs.value }}"
+        run: echo "The replaced value is ${{ steps.watchyourprofamity2.outputs.value }}"
