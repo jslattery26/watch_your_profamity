@@ -1,5 +1,10 @@
 import { info, setFailed, setOutput } from '@actions/core'
-import { RegExpMatcher, TextCensor, englishDataset } from 'obscenity'
+import {
+  RegExpMatcher,
+  TextCensor,
+  englishDataset,
+  englishRecommendedTransformers,
+} from 'obscenity'
 import { getInput, getInputAsArray } from './utils/ActionUtils'
 import { split } from './utils/ArrayUtils'
 import {
@@ -17,7 +22,7 @@ async function run() {
 
     const matcher = new RegExpMatcher({
       ...englishDataset.build(),
-      //   ...englishRecommendedTransformers,
+      ...englishRecommendedTransformers,
     })
 
     let replace = getInput('replace', { required: false })
