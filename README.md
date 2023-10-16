@@ -1,41 +1,61 @@
-# Watch your profamity
-This action executes find-and-replace on profane words in your project
+# String Replacer
 
-## Inputs
+A GitHub Action for finding and replacing strings in your project files
 
-### `source`
+[![GitHub Release](https://img.shields.io/github/release/thiagodnf/string-replacer.svg)](https://github.com/thiagodnf/string-replacer/releases/latest)
+[![GitHub contributors](https://img.shields.io/github/contributors/thiagodnf/string-replacer.svg)](https://github.com/thiagodnf/string-replacer/graphs/contributors)
+[![GitHub stars](https://img.shields.io/github/stars/thiagodnf/string-replacer.svg)](https://github.com/thiagodnf/string-replacer)
+[![MIT Licence](https://badges.frapsoft.com/os/mit/mit.svg?v=103)](https://opensource.org/licenses/mit-license.php)
+[![Open Source Love](https://badges.frapsoft.com/os/v1/open-source.svg?v=103)](https://github.com/ellerbrock/open-source-badges/)
 
-**Required** The source string to apply this action to
+## Input
 
 ### `find`
-
-**Required** The text you want to search for within the branch name (eg. `ref/heads/`)
+**Required** The regular expression you want to be replaced
 
 ### `replace`
+**Required** The new string to be replaced
 
-**Required** The text you want to replace (eg. `head-`, ``, `root_`)
+### `include`
+**Optional** A glob of files to include in our find and replace. Default is `**`
 
-### `replaceAll`
-
-**Optional** Should replace all occurrences? (only 'true' string will be interpreted positive)
+### `exclude`
+**Optional** A glob of files to exclude in our find and replace. Default is `.git/**`
 
 ## Outputs
 
-### `value`
+### `modifiedFiles`
 
-The new value containing the found-and-replaced string.
+The number of files which have been modified
 
-### Example usage
+## Usage
+
+### Example workflow
 
 ```yaml
-uses: jslattery26/watch_your_profamity@3
-with:
-    source: ${{ github.ref }} # this translates to ref/heads/main on the main branch, but can be any arbitrary string 
-    find: 'ref/heads/'        # we want to remove ref/heads/ from source 
-    replace: ''               # and replace it with a blank string (ie. removing it)
+name: My Workflow
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+     
+      - uses: actions/checkout@main
+     
+      - name: Find and Replace
+        uses: jslattery26/watch_your_profamity@main
+        with:
+          include: |
+            test/**/*.md
+          exclude: |
+            .git/**
+            node_modules/**
 ```
 
-This will output `main`.
 
-Check out `.github/workflows/main.yml` for more examples
+
+
+fuck
 

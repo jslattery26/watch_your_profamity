@@ -1,25 +1,24 @@
-name: 'Watch Your Profamity'
-description: 'Removes all profanity from your project'
-author: 'Jack Slattery'
+name: Watch Your Profamity
+description: Remove profanity from your project
+author: jslattery26
 branding:
-  color: purple
   icon: life-buoy
+  color: purple
 inputs:
-  source:
-    description: 'The text you want to run this action on'
-    required: true
-  find:
-    description: 'The text you are looking for'
-    required: true
   replace:
-    description: 'The text you want to replace with'
-    required: true
-  replaceAll:
-    description: 'Replace all occurrences?'
+    description: The new string to be replaced
+    required: false
+  include:
+    description: A glob of files to include in our find and replace
+    required: false
+    default: '**' # Include everything by default
+  exclude:
+    description: A glob of files to exclude in our find and replace
+    default: '.git/**' # Ignore the `.git` directory by default
     required: false
 outputs:
-  value:
-    description: 'The new value after find-and-replace has been run'
+  modifiedFiles:
+    description: The number of files which have been modified
 runs:
-  using: 'node16'
-  main: 'index.js'
+  using: node16
+  main: 'dist/index.js'
