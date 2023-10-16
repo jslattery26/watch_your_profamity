@@ -1,10 +1,8 @@
 name: Remove Profanity
-
-on:
-  pull_request:
+'on':
   push:
-    paths:
-      - 'package.json'
+    branches:
+      - main
 
 jobs:
   remove-profanity:
