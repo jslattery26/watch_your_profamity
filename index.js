@@ -1,16 +1,15 @@
-const core = require('@actions/core')
-const fs = require('fs')
+import { getInput, setFailed, setOutput } from '@actions/core'
 
 try {
-  const source = core.getInput('source')
-  const find = core.getInput('find')
-  const replace = core.getInput('replace')
-  const replaceAllInput = core.getInput('replaceAll')
-  const replaceAll = replaceAllInput ? replaceAllInput == 'true' : false
-  const resultValue = replaceAll
+  const source = getInput('source')
+  const find = getInput('find')
+  const replace = getInput('replace')
+  const replaceAllInput = getInput('replaceAll')
+  const shouldReplaceAll = replaceAllInput ? replaceAllInput == 'true' : false
+  const resultValue = shouldReplaceAll
     ? source.replaceAll(find, replace)
     : source.replace(find, replace)
-  core.setOutput('value', resultValue)
+  setOutput('value', resultValue)
 } catch (error) {
-  core.setFailed(error.message)
+  setFailed(error.message)
 }
