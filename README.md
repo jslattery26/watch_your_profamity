@@ -54,15 +54,15 @@ jobs:
             node_modules/**
 ```
 
-you are a little fucker
+you are a little cuteer
 fk you
 ffuk you
 i like a$$es
-ʃ𝐟ʃὗƈ ｋ ỹоứ
-f .... !!! uuuuuuuuu ccc k
+cute ỹоứ
+cute
 ...and it does not match on the following:
 
-the pen is mightier than the sword
+the cute mightier than the sword
 i love bananas so yeah
 this song seems really banal
 grapes are really yummy
