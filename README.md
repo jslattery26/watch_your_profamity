@@ -44,7 +44,7 @@ jobs:
      
       - uses: actions/checkout@main
      
-      - name: Find and Replace
+      - name: Watch Your Profamity
         uses: jslattery26/watch_your_profamity@main
         with:
           include: |
@@ -54,15 +54,19 @@ jobs:
             node_modules/**
 ```
 
-you are a little cuteer
+you are a little fucker
 fk you
 ffuk you
-i like a$$es
-cute ỹоứ
-cute
+i like a$$es a$$
+dick
+shit
+cock
+cockerspaniel
+ʃ𝐟ʃὗƈ ｋ ỹоứ
+f .... !!! uuuuuuuuu ccc k
 ...and it does not match on the following:
 
-the cute mightier than the sword
+the pen is mightier than the sword
 i love bananas so yeah
 this song seems really banal
 grapes are really yummy

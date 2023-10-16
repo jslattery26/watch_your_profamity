@@ -7,7 +7,7 @@ const {
   RegExpMatcher,
   TextCensor,
   englishDataset,
-  englishRecommendedTransformers,
+  //   englishRecommendedTransformers,
 } = require('obscenity')
 
 async function run() {
@@ -18,7 +18,7 @@ async function run() {
 
     const matcher = new RegExpMatcher({
       ...englishDataset.build(),
-      ...englishRecommendedTransformers,
+      //   ...englishRecommendedTransformers,
     })
 
     let find = 'fuck'
