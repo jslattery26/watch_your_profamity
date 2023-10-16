@@ -16,7 +16,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: String Replacer
-        uses: jslattery26/watch_your_profamity@0.0.6
+        uses: jslattery26/watch_your_profamity@main
         with:
           include: |
             **/README.md
@@ -24,3 +24,4 @@ jobs:
       - uses: stefanzweifel/git-auto-commit-action@v4
         with:
           commit_message: Removing that profanity dawg
+          branch: ${{ github.ref }}
