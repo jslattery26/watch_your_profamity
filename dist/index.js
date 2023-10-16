@@ -2749,6 +2749,3464 @@ exports.Minipass = Minipass
 
 /***/ }),
 
+/***/ 2478:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.randomCharFromSetCensorStrategy = exports.fixedCharCensorStrategy = exports.fixedPhraseCensorStrategy = exports.grawlixCensorStrategy = exports.asteriskCensorStrategy = exports.keepEndCensorStrategy = exports.keepStartCensorStrategy = void 0;
+const Char_1 = __nccwpck_require__(8861);
+/**
+ * A text censoring strategy that extends another strategy, adding the first
+ * character matched at the start of the generated string.
+ *
+ * @example
+ * ```typescript
+ * const strategy = keepStartCensorStrategy(grawlixCensorStrategy());
+ * const censor = new TextCensor().setStrategy(strategy);
+ * // Before: 'fuck you'
+ * // After: 'f$@* you'
+ * ```
+ *
+ * @example
+ * ```typescript
+ * // Since keepEndCensorStrategy() returns another text censoring strategy, you can use it
+ * // as the base strategy to pass to keepStartCensorStrategy().
+ * const strategy = keepStartCensorStrategy(keepEndCensorStrategy(asteriskCensorStrategy()));
+ * const censor = new TextCensor().setStrategy(strategy);
+ * // Before: 'fuck you'
+ * // After: 'f**k you'
+ * ```
+ *
+ * @param baseStrategy - Strategy to extend. It will be used to produce the end of
+ * the generated string.
+ * @returns A [[TextCensorStrategy]] for use with the [[TextCensor]].
+ */
+function keepStartCensorStrategy(baseStrategy) {
+    return (ctx) => {
+        if (ctx.overlapsAtStart)
+            return baseStrategy(ctx);
+        const firstChar = String.fromCodePoint(ctx.input.codePointAt(ctx.startIndex));
+        return firstChar + baseStrategy({ ...ctx, matchLength: ctx.matchLength - 1 });
+    };
+}
+exports.keepStartCensorStrategy = keepStartCensorStrategy;
+/**
+ * A text censoring strategy that extends another strategy, adding the last
+ * character matched at the end of the generated string.
+ *
+ * @example
+ * ```typescript
+ * const strategy = keepEndCensorStrategy(asteriskCensorStrategy());
+ * const censor = new TextCensor().setStrategy(strategy);
+ * // Before: 'fuck you'
+ * // After: '***k you'
+ * ```
+ *
+ * @param baseStrategy - Strategy to extend. It will be used to produce the start
+ * of the generated string.
+ * @returns A [[TextCensorStrategy]] for use with the [[TextCensor]].
+ */
+function keepEndCensorStrategy(baseStrategy) {
+    return (ctx) => {
+        if (ctx.overlapsAtEnd)
+            return baseStrategy(ctx);
+        const lastChar = String.fromCodePoint(ctx.input.codePointAt(ctx.endIndex));
+        return baseStrategy({ ...ctx, matchLength: ctx.matchLength - 1 }) + lastChar;
+    };
+}
+exports.keepEndCensorStrategy = keepEndCensorStrategy;
+/**
+ * A text censoring strategy that generates strings made up of asterisks (`*`).
+ *
+ * @example
+ * ```typescript
+ * const strategy = asteriskCensorStrategy();
+ * const censor = new TextCensor().setStrategy(strategy);
+ * // Before: 'fuck you'
+ * // After: '**** you'
+ * ```
+ *
+ * @returns A [[TextCensorStrategy]] for use with the [[TextCensor]].
+ */
+function asteriskCensorStrategy() {
+    return fixedCharCensorStrategy('*');
+}
+exports.asteriskCensorStrategy = asteriskCensorStrategy;
+/**
+ * A text censoring strategy that generates
+ * [grawlix](https://www.merriam-webster.com/words-at-play/grawlix-symbols-swearing-comic-strips),
+ * i.e. strings that contain the characters `%`, `@`, `$`, `&`, and `*`.
+ *
+ * @example
+ * ```typescript
+ * const strategy = grawlixCensorStrategy();
+ * const censor = new TextCensor().setStrategy(strategy);
+ * // Before: 'fuck you'
+ * // After: '%@&* you'
+ * ```
+ *
+ * @returns A [[TextCensorStrategy]] for use with the [[TextCensor]].
+ */
+function grawlixCensorStrategy() {
+    return randomCharFromSetCensorStrategy('%@$&*');
+}
+exports.grawlixCensorStrategy = grawlixCensorStrategy;
+/**
+ * A text censoring strategy that returns a fixed string.
+ *
+ * @example
+ * ```typescript
+ * // The replacement phrase '' effectively removes all matched regions
+ * // from the string.
+ * const strategy = fixedPhraseCensorStrategy('');
+ * const censor = new TextCensor().setStrategy(strategy);
+ * // Before: 'fuck you'
+ * // After: ' you'
+ * ```
+ *
+ * @example
+ * ```typescript
+ * const strategy = fixedPhraseCensorStrategy('fudge');
+ * const censor = new TextCensor().setStrategy(strategy);
+ * // Before: 'fuck you'
+ * // After: 'fudge you'
+ * ```
+ *
+ * @param phrase - Replacement phrase to use.
+ * @returns A [[TextCensorStrategy]] for use with the [[TextCensor]].
+ */
+function fixedPhraseCensorStrategy(phrase) {
+    return () => phrase;
+}
+exports.fixedPhraseCensorStrategy = fixedPhraseCensorStrategy;
+/**
+ * A text censoring strategy that generates replacement strings that are made up
+ * of the character given, repeated as many times as needed.
+
+ * @example
+ * ```typescript
+ * const strategy = fixedCharCensorStrategy('*');
+ * const censor = new TextCensor().setStrategy(strategy);
+ * // Before: 'fuck you'
+ * // After: '**** you'.
+ * ```
+ *
+ * @param char - String that represents the code point which should be used when
+ * generating the replacement string. Must be exactly one code point in length.
+ * @returns A [[TextCensorStrategy]] for use with the [[TextCensor]].
+ */
+function fixedCharCensorStrategy(char) {
+    // Make sure the input character is one code point in length.
+    Char_1.getAndAssertSingleCodePoint(char);
+    return (ctx) => char.repeat(ctx.matchLength);
+}
+exports.fixedCharCensorStrategy = fixedCharCensorStrategy;
+/**
+ * A text censoring strategy that generates replacement strings made up of
+ * random characters from the set of characters provided.
+ *
+ * @example
+ * ```typescript
+ * const strategy = randomCharFromSetCensorStrategy('$#!');
+ * const censor = new TextCensor().setStrategy(strategy);
+ * // Before: 'fuck you!'
+ * // After: '!##$ you!'
+ * ```
+ *
+ * @param charset - Set of characters from which the replacement string should
+ * be constructed. Must not be empty.
+ * @returns A [[TextCensorStrategy]] for use with the [[TextCensor]].
+ */
+function randomCharFromSetCensorStrategy(charset) {
+    const chars = [...charset];
+    if (chars.length === 0)
+        throw new Error('The character set passed must not be empty.');
+    return (ctx) => {
+        let censored = '';
+        for (let i = 0; i < ctx.matchLength; i++)
+            censored += chars[Math.floor(Math.random() * chars.length)];
+        return censored;
+    };
+}
+exports.randomCharFromSetCensorStrategy = randomCharFromSetCensorStrategy;
+
+
+/***/ }),
+
+/***/ 3297:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.TextCensor = void 0;
+const MatchPayload_1 = __nccwpck_require__(7857);
+const BuiltinStrategies_1 = __nccwpck_require__(2478);
+/**
+ * Censors regions of text matched by a [[Matcher]], supporting flexible
+ * [[TextCensorStrategy | censoring strategies]].
+ */
+class TextCensor {
+    constructor() {
+        this.strategy = BuiltinStrategies_1.grawlixCensorStrategy();
+    }
+    /**
+     * Sets the censoring strategy, which is responsible for generating
+     * replacement text for regions of the text that should be censored.
+     *
+     * The default censoring strategy is the [[grawlixCensorStrategy]],
+     * generating text like `$%@*`. There are several other built-in strategies
+     * available:
+     * - [[keepStartCensorStrategy]] - extends another strategy and keeps the
+     *   first character matched, e.g. `f***`.
+     * - [[keepEndCensorStrategy]] - extends another strategy and keeps the last
+     *   character matched, e.g. `***k`.
+     * - [[asteriskCensorStrategy]] - replaces the text with asterisks, e.g.
+     *   `****`.
+     * - [[grawlixCensorStrategy]] - the default strategy, discussed earlier.
+     *
+     * Note that since censoring strategies are just functions (see the
+     * documentation for [[TextCensorStrategy]]), it is relatively simple to
+     * create your own.
+     *
+     * To ease creation of common censoring strategies, we provide a number of
+     * utility functions:
+     * - [[fixedPhraseCensorStrategy]] - generates a fixed phrase, e.g. `fudge`.
+     * - [[fixedCharCensorStrategy]] - generates replacement strings constructed
+     *   from the character given, repeated as many times as needed.
+     * - [[randomCharFromSetCensorStrategy]] - generates replacement strings
+     *   made up of random characters from the set of characters provided.
+     *
+     * @param strategy - Text censoring strategy to use.
+     */
+    setStrategy(strategy) {
+        this.strategy = strategy;
+        return this;
+    }
+    /**
+     * Applies the censoring strategy to the text, returning the censored text.
+     *
+     * **Overlapping regions**
+     *
+     * Overlapping regions are an annoying edge case to deal with when censoring
+     * text. There is no single best way to handle them, but the implementation
+     * of this method guarantees that overlapping regions will always be
+     * replaced, following the rules below:
+     *
+     * - Replacement text for matched regions will be generated in the order
+     *   specified by [[compareMatchByPositionAndId]];
+     * - When generating replacements for regions that overlap at the start with
+     *   some other region, the start index of the censor context passed to the
+     *   censoring strategy will be the end index of the first region, plus one.
+     *
+     * @param input - Input text.
+     * @param matches - A list of matches.
+     * @returns The censored text.
+     */
+    applyTo(input, matches) {
+        if (matches.length === 0)
+            return input;
+        const sorted = [...matches].sort(MatchPayload_1.compareMatchByPositionAndId);
+        let censored = '';
+        let lastIndex = 0; // end index of last match, plus one
+        for (let i = 0; i < sorted.length; i++) {
+            const match = sorted[i];
+            if (lastIndex > match.endIndex)
+                continue; // completely contained in the previous span
+            const overlapsAtStart = match.startIndex < lastIndex;
+            // Add the chunk of text between the end of the last match and the
+            // start of the current match.
+            if (!overlapsAtStart)
+                censored += input.slice(lastIndex, match.startIndex);
+            const actualStartIndex = Math.max(lastIndex, match.startIndex);
+            const overlapsAtEnd = i < sorted.length - 1 && // not the last match
+                match.endIndex >= sorted[i + 1].startIndex && // end index of this match and start index of next one overlap
+                match.endIndex < sorted[i + 1].endIndex; // doesn't completely contain next match
+            censored += this.strategy({ ...match, startIndex: actualStartIndex, input, overlapsAtStart, overlapsAtEnd });
+            lastIndex = match.endIndex + 1;
+        }
+        censored += input.slice(lastIndex);
+        return censored;
+    }
+}
+exports.TextCensor = TextCensor;
+
+
+/***/ }),
+
+/***/ 2537:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.PhraseBuilder = exports.DataSet = void 0;
+const BlacklistedTerm_1 = __nccwpck_require__(3531);
+/**
+ * Holds phrases (groups of patterns and whitelisted terms), optionally
+ * associating metadata with them.
+ *
+ * @typeParam MetadataType - Metadata type for phrases. Note that the metadata
+ * type is implicitly nullable.
+ */
+class DataSet {
+    constructor() {
+        this.containers = [];
+        this.patternCount = 0;
+        this.patternIdToPhraseContainer = new Map(); // pattern ID => index of its container
+    }
+    /**
+     * Adds all the phrases from the dataset provided to this one.
+     *
+     * @example
+     * ```typescript
+     * const customDataset = new DataSet().addAll(englishDataset);
+     * ```
+     *
+     * @param other - Other dataset.
+     */
+    addAll(other) {
+        for (const container of other.containers)
+            this.registerContainer(container);
+        return this;
+    }
+    /**
+     * Removes phrases that match the predicate given.
+     *
+     * @example
+     * ```typescript
+     * const customDataset = new DataSet<{ originalWord: string }>()
+     * 	.addAll(englishDataset)
+     * 	.removePhrasesIf((phrase) => phrase.metadata.originalWord === 'fuck');
+     * ```
+     *
+     * @param predicate - A predicate that determines whether or not a phrase should be removed.
+     * Return `true` to remove, `false` to keep.
+     */
+    removePhrasesIf(predicate) {
+        // Clear the internal state, then gradually rebuild it by adding the
+        // containers that should be kept.
+        this.patternCount = 0;
+        this.patternIdToPhraseContainer.clear();
+        const containers = this.containers.splice(0);
+        for (const container of containers) {
+            const remove = predicate(container);
+            if (!remove)
+                this.registerContainer(container);
+        }
+        return this;
+    }
+    /**
+     * Adds a phrase to this dataset.
+     *
+     * @example
+     * ```typescript
+     * const data = new DataSet<{ originalWord: string }>()
+     * 	.addPhrase((phrase) => phrase.setMetadata({ originalWord: 'fuck' })
+     * 		.addPattern(pattern`fuck`)
+     * 		.addPattern(pattern`f[?]ck`)
+     * 		.addWhitelistedTerm('Afck'))
+     * 	.build();
+     * ```
+     *
+     * @param fn - A function that takes a [[PhraseBuilder]], adds
+     * patterns/whitelisted terms/metadata to it, and returns it.
+     */
+    addPhrase(fn) {
+        const container = fn(new PhraseBuilder()).build();
+        this.registerContainer(container);
+        return this;
+    }
+    /**
+     * Retrieves the phrase metadata associated with a pattern and returns a
+     * copy of the match payload with said metadata attached to it.
+     *
+     * @example
+     * ```typescript
+     * const matches = matcher.getAllMatches(input);
+     * const matchesWithPhraseMetadata = matches.map((match) => dataset.getPayloadWithPhraseMetadata(match));
+     * // Now we can access the 'phraseMetadata' property:
+     * const phraseMetadata = matchesWithPhraseMetadata[0].phraseMetadata;
+     * ```
+     *
+     * @param payload - Original match payload.
+     */
+    getPayloadWithPhraseMetadata(payload) {
+        const offset = this.patternIdToPhraseContainer.get(payload.termId);
+        if (offset === undefined) {
+            throw new Error(`The pattern with ID ${payload.termId} does not exist in this dataset.`);
+        }
+        return {
+            ...payload,
+            phraseMetadata: this.containers[offset].metadata,
+        };
+    }
+    /**
+     * Returns the dataset in a format suitable for usage with the [[RegExpMatcher]]
+     * or the [[NfaMatcher]].
+     *
+     * @example
+     * ```typescript
+     * // With the RegExpMatcher:
+     * const matcher = new RegExpMatcher({
+     * 	...dataset.build(),
+     * 	// additional options here
+     * });
+     * ```
+     *
+     * @example
+     * ```typescript
+     * // With the NfaMatcher:
+     * const matcher = new NfaMatcher({
+     * 	...dataset.build(),
+     * 	// additional options here
+     * });
+     * ```
+     */
+    build() {
+        return {
+            blacklistedTerms: BlacklistedTerm_1.assignIncrementingIds(this.containers.flatMap((p) => p.patterns)),
+            whitelistedTerms: this.containers.flatMap((p) => p.whitelistedTerms),
+        };
+    }
+    registerContainer(container) {
+        const offset = this.containers.push(container) - 1;
+        for (let i = 0, phraseId = this.patternCount; i < container.patterns.length; i++, phraseId++) {
+            this.patternIdToPhraseContainer.set(phraseId, offset);
+            this.patternCount++;
+        }
+    }
+}
+exports.DataSet = DataSet;
+/**
+ * Builder for phrases.
+ */
+class PhraseBuilder {
+    constructor() {
+        this.patterns = [];
+        this.whitelistedTerms = [];
+    }
+    /**
+     * Associates a pattern with this phrase.
+     *
+     * @param pattern - Pattern to add.
+     */
+    addPattern(pattern) {
+        this.patterns.push(pattern);
+        return this;
+    }
+    /**
+     * Associates a whitelisted pattern with this phrase.
+     *
+     * @param term - Whitelisted term to add.
+     */
+    addWhitelistedTerm(term) {
+        this.whitelistedTerms.push(term);
+        return this;
+    }
+    /**
+     * Associates some metadata with this phrase.
+     *
+     * @param metadata - Metadata to use.
+     */
+    setMetadata(metadata) {
+        this.metadata = metadata;
+        return this;
+    }
+    /**
+     * Builds the phrase, returning a [[PhraseContainer]] for use with the
+     * [[DataSet]].
+     */
+    build() {
+        return {
+            patterns: this.patterns,
+            whitelistedTerms: this.whitelistedTerms,
+            metadata: this.metadata,
+        };
+    }
+}
+exports.PhraseBuilder = PhraseBuilder;
+
+
+/***/ }),
+
+/***/ 8795:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.version = void 0;
+__exportStar(__nccwpck_require__(2478), exports);
+__exportStar(__nccwpck_require__(3297), exports);
+__exportStar(__nccwpck_require__(2537), exports);
+__exportStar(__nccwpck_require__(3001), exports);
+__exportStar(__nccwpck_require__(6319), exports);
+__exportStar(__nccwpck_require__(3531), exports);
+__exportStar(__nccwpck_require__(7857), exports);
+__exportStar(__nccwpck_require__(312), exports);
+__exportStar(__nccwpck_require__(5069), exports);
+__exportStar(__nccwpck_require__(3403), exports);
+__exportStar(__nccwpck_require__(7148), exports);
+__exportStar(__nccwpck_require__(1660), exports);
+__exportStar(__nccwpck_require__(5674), exports);
+__exportStar(__nccwpck_require__(5859), exports);
+__exportStar(__nccwpck_require__(474), exports);
+__exportStar(__nccwpck_require__(2633), exports);
+__exportStar(__nccwpck_require__(6458), exports);
+__exportStar(__nccwpck_require__(6336), exports);
+/**
+ * The current version of the library, formatted as `MAJOR.MINOR.PATCH`.
+ */
+exports.version = '0.1.0';
+
+
+/***/ }),
+
+/***/ 3531:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.assignIncrementingIds = void 0;
+/**
+ * Assigns incrementing IDs to the patterns provided, starting with 0. It is
+ * useful if you have a list of patterns to match against but don't care about
+ * identifying which pattern matched.
+ *
+ * @example
+ * ```typescript
+ * const matcher = new RegExpMatcher({
+ *  ...,
+ *  blacklistedTerms: assignIncrementingIds([
+ *      pattern`f?uck`,
+ *      pattern`|shit|`,
+ *  ]),
+ * });
+ * ```
+ *
+ * @param patterns - List of parsed patterns.
+ * @returns A list of blacklisted terms with valid IDs which can then be passed
+ * to the [[RegExpMatcher]] or [[NfaMatcher]].
+ */
+function assignIncrementingIds(patterns) {
+    let currentId = 0;
+    return patterns.map((pattern) => ({ id: currentId++, pattern }));
+}
+exports.assignIncrementingIds = assignIncrementingIds;
+
+
+/***/ }),
+
+/***/ 9071:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.IntervalCollection = void 0;
+class IntervalCollection {
+    constructor() {
+        this.dirty = false;
+        this.intervals = [];
+    }
+    insert(lowerBound, upperBound) {
+        this.intervals.push([lowerBound, upperBound]);
+        this.dirty = true;
+    }
+    query(lowerBound, upperBound) {
+        if (this.intervals.length === 0)
+            return false;
+        if (this.dirty) {
+            this.dirty = false;
+            // Sort by lower bound.
+            this.intervals.sort(
+            /* istanbul ignore next: not possible to write a robust test for this */
+            (a, b) => (a[0] < b[0] ? -1 : b[0] < a[0] ? 1 : 0));
+        }
+        for (const interval of this.intervals) {
+            // Since the intervals are sorted by lower bound, if we see an
+            // interval with a lower bound greater than the target, we can skip
+            // checking all the ones after it as it's impossible that they fully
+            // contain the target interval.
+            if (interval[0] > lowerBound)
+                break;
+            if (interval[0] <= lowerBound && upperBound <= interval[1])
+                return true;
+        }
+        return false;
+    }
+    values() {
+        return this.intervals.values();
+    }
+    [Symbol.iterator]() {
+        return this.values();
+    }
+}
+exports.IntervalCollection = IntervalCollection;
+
+
+/***/ }),
+
+/***/ 7857:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.compareMatchByPositionAndId = void 0;
+const Interval_1 = __nccwpck_require__(2990);
+/**
+ * Compares two match payloads.
+ *
+ * * If the first match payload's start index is less than the second's, `-1` is
+ *   returned;
+ * * If the second match payload's start index is less than the first's, `1` is
+ *   returned;
+ * * If the first match payload's end index is less than the second's, `-1` is
+ *   returned;
+ * * If the second match payload's end index is less than the first's, `1` is
+ *   returned;
+ * * If the first match payload's term ID is less than the second's, `-1` is
+ *   returned;
+ * * If the first match payload's term ID is equal to the second's, `0` is
+ *   returned;
+ * * Otherwise, `1` is returned.
+ *
+ * @param a - First match payload.
+ * @param b - Second match payload.
+ * @returns The result of the comparison: -1 if the first should sort lower than
+ * the second, 0 if they are the same, and 1 if the second should sort lower
+ * than the first.
+ */
+function compareMatchByPositionAndId(a, b) {
+    const result = Interval_1.compareIntervals(a.startIndex, a.endIndex, b.startIndex, b.endIndex);
+    if (result !== 0)
+        return result;
+    return a.termId === b.termId ? 0 : a.termId < b.termId ? -1 : 1;
+}
+exports.compareMatchByPositionAndId = compareMatchByPositionAndId;
+
+
+/***/ }),
+
+/***/ 312:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+
+
+/***/ }),
+
+/***/ 6319:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.NfaMatcher = void 0;
+const Nodes_1 = __nccwpck_require__(5069);
+const Simplifier_1 = __nccwpck_require__(3596);
+const Util_1 = __nccwpck_require__(3025);
+const TransformerSet_1 = __nccwpck_require__(1690);
+const Char_1 = __nccwpck_require__(8861);
+const CharacterIterator_1 = __nccwpck_require__(8460);
+const CircularBuffer_1 = __nccwpck_require__(5376);
+const Queue_1 = __nccwpck_require__(8844);
+const IntervalCollection_1 = __nccwpck_require__(9071);
+const MatchPayload_1 = __nccwpck_require__(7857);
+const BlacklistTrieNode_1 = __nccwpck_require__(2144);
+const WhitelistedTermMatcher_1 = __nccwpck_require__(2712);
+/**
+ * An implementation of the [[Matcher]] interface using finite automata
+ * techniques.
+ *
+ * It is theoretically faster than the [[RegExpMatcher]]: the `hasMatch()` and
+ * `getAllMatches()` execute in time proportional only to that of the length of
+ * the input text and the number of matches. In other words, it _theoretically_
+ * should not degrade in performance as you add more terms - matching with 100
+ * and 1000 patterns should have the same performance. It achieves this by
+ * building a heavily modified [Aho-Corasick
+ * automaton](https://en.wikipedia.org/wiki/Aho%E2%80%93Corasick_algorithm) from
+ * the input patterns.
+ *
+ * In practice, its high constant factors make it slower than the
+ * [[RegExpMatcher]] until about ~100 patterns, at which point both
+ * implementations have approximately the same performance.
+ *
+ * The regular-expression matcher should be preferred to this one if at all
+ * possible, as it uses more memory and is only marginally faster at the scale
+ * most users of this package are expected to use it at. However, it may be
+ * appropriate if:
+ *
+ * - You have a large number of patterns (> 100);
+ * - You expect to be matching on long text;
+ * - You have benchmarked the implementations and found the [[NfaMatcher]] to be
+ *   noticeably faster.
+ */
+class NfaMatcher {
+    /**
+     * Creates a new [[NfaMatcher]] with the options given.
+     *
+     * @example
+     * ```typescript
+     * // Use the options provided by the English preset.
+     * const matcher = new NfaMatcher({
+     * 	...englishDataset.build(),
+     * 	...englishRecommendedTransformers,
+     * });
+     * ```
+     *
+     * @example
+     * ```typescript
+     * // Simple matcher that only has blacklisted patterns.
+     * const matcher = new NfaMatcher({
+     *  blacklistedTerms: assignIncrementingIds([
+     *      pattern`fuck`,
+     *      pattern`f?uck`, // wildcards (?)
+     *      pattern`bitch`,
+     *      pattern`b[i]tch` // optionals ([i] matches either "i" or "")
+     *  ]),
+     * });
+     *
+     * // Check whether some string matches any of the patterns.
+     * const doesMatch = matcher.hasMatch('fuck you bitch');
+     * ```
+     *
+     * @example
+     * ```typescript
+     * // A more advanced example, with transformers and whitelisted terms.
+     * const matcher = new NfaMatcher({
+     *  blacklistedTerms: [
+     *      { id: 1, pattern: pattern`penis` },
+     *      { id: 2, pattern: pattern`fuck` },
+     *  ],
+     *  whitelistedTerms: ['pen is'],
+     *  blacklistMatcherTransformers: [
+     *      resolveConfusablesTransformer(), // '🅰' => 'a'
+     *      resolveLeetSpeakTransformer(), // '$' => 's'
+     *      foldAsciiCharCaseTransformer(), // case insensitive matching
+     * 	    skipNonAlphabeticTransformer(), // 'f.u...c.k' => 'fuck'
+     *      collapseDuplicatesTransformer(), // 'aaaa' => 'a'
+     *  ],
+     * });
+     *
+     * // Output all matches.
+     * console.log(matcher.getAllMatches('fu.....uuuuCK the pen is mightier than the sword!'));
+     * ```
+     *
+     * @param options - Options to use.
+     */
+    constructor({ blacklistedTerms, whitelistedTerms = [], blacklistMatcherTransformers = [], whitelistMatcherTransformers = [], }) {
+        this.rootNode = new BlacklistTrieNode_1.BlacklistTrieNode();
+        this.originalIds = []; // originalIds[i] is the term ID of the the pattern with ID i
+        this.matchLengths = []; // matchLengths[i] is the match length of the pattern with ID i
+        this.partialMatchStepCounts = new Map(); // partialMatchStepCounts[i] is the total number of steps of the pattern with ID i. Only applies to partial matches.
+        this.wildcardOnlyPatterns = [];
+        // Maximum number of trailing wildcards.
+        //
+        // x x x ? y y ? ? ? ?
+        //             ^^^^^^^
+        //        4 trailing wildcards
+        this.maxTrailingWildcardCount = 0;
+        // Maximum distance between the start of a partial pattern and the end of the partial pattern following it.
+        //
+        // x x x ? ? ? y y y y
+        // 0 1 2 3 4 5 6 7 8 9
+        // ^^^^^^^^^^^^^^^^^^^
+        //    distance of 10
+        //
+        // This value is equal to how long we need to keep partial matches around.
+        this.maxPartialPatternDistance = 0;
+        this.maxMatchLength = 0; // Maximum match length of any pattern, equal to how many indices to the left of the current position we need to track.
+        this.currentId = 0; // Current generated pattern ID.
+        // Use two iterators: one fast, and one slow. The fast iterator will
+        // constantly be |maxTrailingWildcardCount| positions head of the slow
+        // iterator.
+        this.slowIter = new CharacterIterator_1.CharacterIterator();
+        this.fastIter = new CharacterIterator_1.CharacterIterator();
+        this.matches = [];
+        this.currentNode = this.rootNode;
+        this.whitelistedIntervals = new IntervalCollection_1.IntervalCollection();
+        this.whitelistedTermMatcher = new WhitelistedTermMatcher_1.WhitelistedTermMatcher({
+            terms: whitelistedTerms,
+            transformers: whitelistMatcherTransformers,
+        });
+        this.slowTransformers = new TransformerSet_1.TransformerSet(blacklistMatcherTransformers);
+        this.fastTransformers = new TransformerSet_1.TransformerSet(blacklistMatcherTransformers);
+        this.ensureNoDuplicateIds(blacklistedTerms);
+        this.buildTrie(blacklistedTerms);
+        this.constructLinks();
+        this.useUnderlyingEdgeCollectionImplementation(this.rootNode);
+        // Sort wildcard-only patterns by the number of wildcards they have.
+        this.wildcardOnlyPatterns.sort((a, b) => 
+        /* istanbul ignore next: not really possible to write a robust test for this */
+        a.wildcardCount < b.wildcardCount ? -1 : b.wildcardCount < a.wildcardCount ? 1 : 0);
+        this.usedIndices = new CircularBuffer_1.CircularBuffer(this.maxMatchLength);
+        this.futureIndices = new CircularBuffer_1.CircularBuffer(this.maxTrailingWildcardCount);
+        this.partialMatches = new CircularBuffer_1.CircularBuffer(this.maxPartialPatternDistance);
+    }
+    hasMatch(input) {
+        this.setInput(input);
+        const hasMatch = this.run(true);
+        return hasMatch;
+    }
+    getAllMatches(input, sorted = false) {
+        this.setInput(input);
+        this.run();
+        if (sorted)
+            this.matches.sort(MatchPayload_1.compareMatchByPositionAndId);
+        return this.matches;
+    }
+    setInput(input) {
+        this.slowIter.setInput(input);
+        this.fastIter.setInput(input);
+        this.whitelistedIntervals = this.whitelistedTermMatcher.getMatches(input);
+        this.currentNode = this.rootNode;
+        this.slowTransformers.resetAll();
+        this.fastTransformers.resetAll();
+        this.usedIndices.clear();
+        this.futureIndices.clear();
+        this.partialMatches.clear();
+        this.matches = [];
+    }
+    run(breakAfterFirstMatch = false) {
+        // Fill the future index buffer by advancing the fast iterator forward.
+        while (this.futureIndices.length < this.futureIndices.capacity) {
+            const char = this.fastIter.next().value;
+            if (char === undefined) {
+                // Iterator is done.
+                this.futureIndices.push(undefined);
+            }
+            else {
+                const transformed = this.fastTransformers.applyTo(char);
+                // Only add the position if the character didn't become
+                // undefined after transformation.
+                if (transformed !== undefined)
+                    this.futureIndices.push(this.fastIter.position);
+            }
+        }
+        for (const char of this.slowIter) {
+            const transformed = this.slowTransformers.applyTo(char);
+            if (transformed === undefined)
+                continue;
+            // Advance the index window forward.
+            // 	1 3 4 5 7 8 9
+            // becomes
+            // 	3 4 5 7 8 9 10 (if 10 is the current position)
+            this.usedIndices.push(this.slowIter.position);
+            // Advance the partial matches buffer forward.
+            this.partialMatches.push(undefined);
+            // Find next usable character for the fast iterator.
+            if (this.maxTrailingWildcardCount > 0) {
+                let found = false;
+                while (!this.fastIter.done && !found) {
+                    found = this.fastTransformers.applyTo(this.fastIter.next().value) !== undefined;
+                    if (found)
+                        this.futureIndices.push(this.fastIter.position);
+                }
+                if (!found)
+                    this.futureIndices.push(undefined);
+            }
+            // Follow failure links until we find a node that has a transition for the current character.
+            while (this.currentNode !== this.rootNode && !this.currentNode.edges.get(transformed)) {
+                this.currentNode = this.currentNode.failureLink;
+            }
+            this.currentNode = this.currentNode.edges.get(transformed) ?? this.rootNode;
+            // Emit matches for wildcard-only patterns. Patterns of the form
+            // ?^N ('?' repeated N times) always have a match ending at the
+            // current index if the number of characters seen is
+            // >= N.
+            for (const data of this.wildcardOnlyPatterns) {
+                if (data.wildcardCount > this.usedIndices.length)
+                    break;
+                const matchLength = this.matchLengths[data.id];
+                const startIndex = this.usedIndices.get(this.usedIndices.length - matchLength);
+                const matched = this.emitMatch(data.id, data.flags, startIndex, this.slowIter.position + this.slowIter.lastWidth - 1, matchLength);
+                if (matched && breakAfterFirstMatch)
+                    return true;
+            }
+            // Emit matches for the current node, then follow its output links.
+            if (this.currentNode.flags & 4 /* MatchLeaf */) {
+                const matchLength = this.matchLengths[this.currentNode.termId];
+                const startIndex = this.usedIndices.get(this.usedIndices.length - matchLength);
+                const matched = this.emitMatch(this.currentNode.termId, this.currentNode.flags, startIndex, this.slowIter.position + this.slowIter.lastWidth - 1, matchLength);
+                if (matched && breakAfterFirstMatch)
+                    return true;
+            }
+            if (this.currentNode.flags & 8 /* PartialMatchLeaf */) {
+                for (const partialMatch of this.currentNode.partialMatches) {
+                    if (this.emitPartialMatch(partialMatch) && breakAfterFirstMatch)
+                        return true;
+                }
+            }
+            let outputLink = this.currentNode.outputLink;
+            while (outputLink) {
+                if (outputLink.flags & 8 /* PartialMatchLeaf */) {
+                    for (const partialMatch of outputLink.partialMatches) {
+                        if (this.emitPartialMatch(partialMatch) && breakAfterFirstMatch)
+                            return true;
+                    }
+                }
+                if (outputLink.flags & 4 /* MatchLeaf */) {
+                    const matchLength = this.matchLengths[outputLink.termId];
+                    const startIndex = this.usedIndices.get(this.usedIndices.length - matchLength);
+                    const matched = this.emitMatch(outputLink.termId, outputLink.flags, startIndex, this.slowIter.position + this.slowIter.lastWidth - 1, matchLength);
+                    if (matched && breakAfterFirstMatch)
+                        return true;
+                }
+                outputLink = outputLink.outputLink;
+            }
+        }
+        return this.matches.length > 0;
+    }
+    emitPartialMatch(data) {
+        // ??xxxxx
+        // If we have a match for 'xxxxx', the whole pattern matches if the
+        // number of characters seen is greater than the number of leading
+        // wildcards (in this case 2).
+        const hasSufficientCharactersBefore = data.leadingWildcardCount + data.matchLength <= this.usedIndices.length;
+        if (!hasSufficientCharactersBefore)
+            return false;
+        // 	x x ? ? y y y y y
+        // 	0 1 2 3 4 5 5 6 7
+        //
+        // If we have a match for 'yyyyy', the whole pattern matches if we have
+        // a match for 'xx' ending 7 characters before (length of 'yyyyy', plus
+        // two wildcards, plus one).
+        const hasMatchForPreviousStep = 
+        // First step has no match before it.
+        data.step === 1 ||
+            (this.partialMatches
+                .get(this.partialMatches.length - data.leadingWildcardCount - data.matchLength - 1)
+                ?.has(BlacklistTrieNode_1.hashPartialMatch(data.step - 1, data.termId)) ??
+                false);
+        if (!hasMatchForPreviousStep)
+            return false;
+        if (data.step === this.partialMatchStepCounts.get(data.termId)) {
+            // Say the pattern is 'xx???yyyyy'.
+            // We're currently on 'yyyyy' and we know that the steps before
+            // match. We can safely emit a match if there are no trailing
+            // wildcards.
+            if (data.trailingWildcardCount === 0) {
+                const matchLength = this.matchLengths[data.termId];
+                const startIndex = this.usedIndices.get(this.usedIndices.length - matchLength);
+                return this.emitMatch(data.termId, data.flags, startIndex, this.slowIter.position + this.slowIter.lastWidth - 1, matchLength);
+            }
+            // Say the pattern is 'xx??yy??'.
+            // This pattern matches if there are at least two characters that are
+            // usable to the right of the current position.
+            let endIndex = this.futureIndices.get(data.trailingWildcardCount - 1);
+            if (endIndex === undefined)
+                return false;
+            // Adjust for surrogate pairs.
+            if (
+            // not the last character
+            endIndex < this.slowIter.input.length - 1 &&
+                // character is a high surrogate
+                Char_1.isHighSurrogate(this.slowIter.input.charCodeAt(endIndex)) &&
+                // next character is a low surrogate
+                Char_1.isLowSurrogate(this.slowIter.input.charCodeAt(endIndex + 1))) {
+                endIndex++;
+            }
+            const matchLength = this.matchLengths[data.termId];
+            const startIndex = this.usedIndices.get(this.usedIndices.length - matchLength + data.trailingWildcardCount);
+            return this.emitMatch(data.termId, data.flags, startIndex, endIndex, matchLength);
+        }
+        // Otherwise, add a partial match.
+        let hashes = this.partialMatches.get(this.partialMatches.length - 1);
+        if (!hashes)
+            this.partialMatches.set(this.partialMatches.length - 1, (hashes = new Set()));
+        hashes.add(BlacklistTrieNode_1.hashPartialMatch(data.step, data.termId));
+        return false;
+    }
+    emitMatch(id, flags, startIndex, endIndex, matchLength) {
+        const startBoundaryOk = !(flags & 1 /* RequireWordBoundaryAtStart */) || // doesn't require word boundary at the start
+            startIndex === 0 || // first character
+            !Char_1.isWordChar(this.slowIter.input.charCodeAt(startIndex - 1)); // character before isn't a word char
+        const endBoundaryOk = !(flags & 2 /* RequireWordBoundaryAtEnd */) || // doesn't require word boundary at the end
+            endIndex === this.slowIter.input.length - 1 || // last character
+            !Char_1.isWordChar(this.slowIter.input.charCodeAt(endIndex + 1)); // character after isn't a word char
+        if (!startBoundaryOk || !endBoundaryOk)
+            return false;
+        const termId = this.originalIds[id];
+        if (this.whitelistedIntervals.query(startIndex, endIndex))
+            return false;
+        this.matches.push({ termId, matchLength, startIndex, endIndex });
+        return true;
+    }
+    ensureNoDuplicateIds(terms) {
+        const seen = new Set();
+        for (const term of terms) {
+            if (seen.has(term.id))
+                throw new Error(`Found duplicate blacklisted term ID ${term.id}.`);
+            seen.add(term.id);
+        }
+    }
+    buildTrie(patterns) {
+        for (const pattern of patterns)
+            this.registerTerm(pattern);
+    }
+    registerTerm(term) {
+        if (Util_1.potentiallyMatchesEmptyString(term.pattern)) {
+            throw new Error(`Pattern with ID ${term.id} potentially matches empty string; this is unsupported.`);
+        }
+        const simplifiedPatterns = Simplifier_1.simplify(term.pattern.nodes);
+        for (const pattern of simplifiedPatterns) {
+            // Each pattern may actually correspond to several simplified
+            // patterns, so use an incrementing numerical ID internally.
+            const id = this.currentId++;
+            this.originalIds.push(term.id);
+            if (pattern.every((node) => node.kind === Nodes_1.SyntaxKind.Literal)) {
+                this.registerPatternWithOnlyLiterals(id, pattern, term);
+            }
+            else if (pattern.every((node) => node.kind === Nodes_1.SyntaxKind.Wildcard)) {
+                this.registerPatternWithOnlyWildcards(id, pattern, term);
+            }
+            else {
+                this.registerPatternWithWildcardsAndLiterals(id, pattern, term);
+            }
+        }
+    }
+    registerPatternWithOnlyLiterals(id, pattern, term) {
+        const matchLength = Util_1.computePatternMatchLength(pattern);
+        this.matchLengths[id] = matchLength;
+        this.maxMatchLength = Math.max(this.maxMatchLength, matchLength);
+        const endNode = this.extendTrie(pattern[0].chars);
+        endNode.flags |= 4 /* MatchLeaf */;
+        endNode.termId = id;
+        if (term.pattern.requireWordBoundaryAtStart)
+            endNode.flags |= 1 /* RequireWordBoundaryAtStart */;
+        if (term.pattern.requireWordBoundaryAtEnd)
+            endNode.flags |= 2 /* RequireWordBoundaryAtEnd */;
+    }
+    registerPatternWithOnlyWildcards(id, pattern, term) {
+        const matchLength = Util_1.computePatternMatchLength(pattern);
+        this.matchLengths[id] = matchLength;
+        this.maxMatchLength = Math.max(this.maxMatchLength, matchLength);
+        const data = {
+            id: id,
+            flags: 0,
+            wildcardCount: matchLength,
+        };
+        if (term.pattern.requireWordBoundaryAtStart)
+            data.flags |= 1 /* RequireWordBoundaryAtStart */;
+        if (term.pattern.requireWordBoundaryAtEnd)
+            data.flags |= 2 /* RequireWordBoundaryAtEnd */;
+        this.wildcardOnlyPatterns.push(data);
+    }
+    registerPatternWithWildcardsAndLiterals(id, pattern, term) {
+        const matchLength = Util_1.computePatternMatchLength(pattern);
+        this.matchLengths[id] = matchLength;
+        this.maxMatchLength = Math.max(this.maxMatchLength, matchLength);
+        // If a pattern has a wildcard in addition to at least one literal, we
+        // will split the pattern at its wildcards, resulting in a number of
+        // partial patterns. For example, given 'l1 w1 l2 w2' where l1, l2 are
+        // literals and w1, w2 are wildcards, we would have 2 partial patterns:
+        // l1 and l2.
+        //
+        // We will then assign each partial pattern a step: l1 would be tep 1
+        // and l2 step 2. Then, we will extend the trie with l1 and l2. After
+        // that is done, we will decorate the leaf nodes at the leaf nodes of
+        // each pattern with some additional metadata to indicate that they are
+        // the leaf node of a partial match.
+        //
+        // So how does this help us match wildcards?
+        //
+        // Let's say that we find the pattern l1 in the text. Since it is the
+        // first step, we will hash it and add it to the set of partial matches
+        // ending at that position. Now, let's say that we find pattern l2 in
+        // the text. We can combine the partial matches l1 and l2 iff l1 was
+        // found in the text 1 position before the start position of where l2
+        // matched. (1 is the number of wildcards separating l1 and l2 in the
+        // original pattern).
+        //
+        // Since l2 is the last partial pattern, we add it to a stack of pending
+        // partial matches. (Note that if there was no wildcard after l2, we
+        // could emit it immediately. However, as there are wildcards after l2,
+        // we have to wait until we are sure that we have an adequate number of
+        // characters to satisfy the required number of wildcards).
+        const groups = Util_1.groupByNodeType(pattern);
+        let step = 1;
+        const startsWithLiteral = groups[0].isLiteralGroup;
+        for (let i = startsWithLiteral ? 0 : 1; i < groups.length; i += 2, step++) {
+            // Count the number of trailing and leading wildcards
+            // before/after the current literal segment.
+            const lastLiteralGroupLength = i < 2 ? 0 : groups[i - 2].literals.reduce((a, b) => a + b.chars.length, 0);
+            const leadingWildcardCount = i === 0 ? 0 : groups[i - 1].wildcardCount;
+            const trailingWildcardCount = i === groups.length - 1 ? 0 : groups[i + 1].wildcardCount;
+            // Extend the trie with the characters of the literal.
+            const chars = groups[i].literals.flatMap((node) => node.chars);
+            const endNode = this.extendTrie(chars);
+            // Add some additional metadata to the leaf node.
+            const data = {
+                step,
+                termId: id,
+                flags: 0,
+                leadingWildcardCount,
+                trailingWildcardCount,
+                matchLength: chars.length,
+            };
+            if (term.pattern.requireWordBoundaryAtStart)
+                data.flags |= 1 /* RequireWordBoundaryAtStart */;
+            if (term.pattern.requireWordBoundaryAtEnd)
+                data.flags |= 2 /* RequireWordBoundaryAtEnd */;
+            (endNode.partialMatches ?? (endNode.partialMatches = [])).push(data);
+            endNode.flags |= 8 /* PartialMatchLeaf */;
+            this.maxPartialPatternDistance = Math.max(this.maxPartialPatternDistance, lastLiteralGroupLength + leadingWildcardCount + chars.length);
+            if (i >= groups.length - 2) {
+                // Last group of literals.
+                this.maxTrailingWildcardCount = Math.max(this.maxTrailingWildcardCount, trailingWildcardCount);
+            }
+        }
+        this.partialMatchStepCounts.set(id, step - 1);
+    }
+    extendTrie(chars) {
+        let currentNode = this.rootNode;
+        for (const char of chars) {
+            const nextNode = currentNode.edges.get(char);
+            if (nextNode) {
+                currentNode = nextNode;
+            }
+            else {
+                const newNode = new BlacklistTrieNode_1.BlacklistTrieNode();
+                currentNode.edges.set(char, newNode);
+                currentNode = newNode;
+            }
+        }
+        return currentNode;
+    }
+    constructLinks() {
+        // Compute the failure and output functions for the trie. This
+        // implementation is fairly straightforward and is essentially the exact
+        // same as that detailed in Aho and Corasick's original paper. Refer to
+        // section 3 in said paper for more details.
+        this.rootNode.failureLink = this.rootNode;
+        const queue = new Queue_1.Queue();
+        for (const node of this.rootNode.edges.values()) {
+            node.failureLink = this.rootNode;
+            queue.push(node);
+        }
+        while (queue.length > 0) {
+            const node = queue.shift();
+            for (const [char, childNode] of node.edges) {
+                let cur = node.failureLink;
+                while (!cur.edges.get(char) && cur !== this.rootNode)
+                    cur = cur.failureLink;
+                const failureLink = cur.edges.get(char) ?? this.rootNode;
+                childNode.failureLink = failureLink;
+                queue.push(childNode);
+            }
+            node.outputLink =
+                node.failureLink.flags & 4 /* MatchLeaf */ || node.failureLink.flags & 8 /* PartialMatchLeaf */
+                    ? node.failureLink
+                    : node.failureLink.outputLink;
+        }
+    }
+    useUnderlyingEdgeCollectionImplementation(node) {
+        node.edges = node.edges.underlyingImplementation;
+        for (const childNode of node.edges.values())
+            this.useUnderlyingEdgeCollectionImplementation(childNode);
+    }
+}
+exports.NfaMatcher = NfaMatcher;
+
+
+/***/ }),
+
+/***/ 2712:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.WhitelistedTermMatcher = void 0;
+const TransformerSet_1 = __nccwpck_require__(1690);
+const CharacterIterator_1 = __nccwpck_require__(8460);
+const CircularBuffer_1 = __nccwpck_require__(5376);
+const Queue_1 = __nccwpck_require__(8844);
+const IntervalCollection_1 = __nccwpck_require__(9071);
+const WhitelistTrieNode_1 = __nccwpck_require__(2201);
+class WhitelistedTermMatcher {
+    constructor({ terms, transformers = [] }) {
+        this.rootNode = new WhitelistTrieNode_1.WhitelistTrieNode();
+        this.currentId = 0;
+        this.matchLengths = new Map(); // term ID -> match length
+        this.maxMatchLength = 0;
+        this.transformers = new TransformerSet_1.TransformerSet(transformers);
+        for (const term of terms)
+            this.registerTerm(term);
+        this.constructLinks();
+        this.useUnderlyingEdgeCollectionImplementation(this.rootNode);
+    }
+    getMatches(text) {
+        if (this.rootNode.edges.size === 0)
+            return new IntervalCollection_1.IntervalCollection();
+        const usedIndices = new CircularBuffer_1.CircularBuffer(this.maxMatchLength);
+        const matches = new IntervalCollection_1.IntervalCollection();
+        let currentNode = this.rootNode;
+        const iter = new CharacterIterator_1.CharacterIterator(text);
+        for (const char of iter) {
+            const transformed = this.transformers.applyTo(char);
+            if (transformed === undefined)
+                continue; // Returning undefined from a transformer skips that character.
+            // Mark the current position as one used for matching.
+            usedIndices.push(iter.position);
+            // Follow failure links until we find a node that has a transition for the current character.
+            while (currentNode !== this.rootNode && !currentNode.edges.get(transformed)) {
+                currentNode = currentNode.failureLink;
+            }
+            currentNode = currentNode.edges.get(transformed) ?? this.rootNode;
+            // Report matches as needed.
+            if (currentNode.isOutputNode) {
+                const matchLength = this.matchLengths.get(currentNode.termId);
+                const startIndex = usedIndices.get(usedIndices.length - matchLength);
+                // Adjust the end index by iter.lastWidth - 1 to account for surrogate pairs.
+                matches.insert(startIndex, iter.position + iter.lastWidth - 1);
+            }
+            let linkedNode = currentNode.outputLink;
+            while (linkedNode) {
+                const matchLength = this.matchLengths.get(linkedNode.termId);
+                const startIndex = usedIndices.get(usedIndices.length - matchLength);
+                // Similar.
+                matches.insert(startIndex, iter.position + iter.lastWidth - 1);
+                linkedNode = linkedNode.outputLink;
+            }
+        }
+        this.transformers.resetAll();
+        return matches;
+    }
+    registerTerm(term) {
+        if (term.length === 0)
+            throw new Error('Unexpected empty whitelisted term.');
+        const id = this.currentId++;
+        // Track the match length of this term.
+        const chars = [...new CharacterIterator_1.CharacterIterator(term)];
+        const matchLength = chars.length;
+        this.matchLengths.set(id, matchLength);
+        if (matchLength > this.maxMatchLength)
+            this.maxMatchLength = matchLength;
+        let currentNode = this.rootNode;
+        for (const char of chars) {
+            const nextNode = currentNode.edges.get(char);
+            if (nextNode) {
+                currentNode = nextNode;
+            }
+            else {
+                const newNode = new WhitelistTrieNode_1.WhitelistTrieNode();
+                currentNode.edges.set(char, newNode);
+                currentNode = newNode;
+            }
+        }
+        currentNode.isOutputNode = true;
+        currentNode.termId = id;
+    }
+    constructLinks() {
+        // Compute the failure and output functions for the trie. This
+        // implementation is fairly straightforward and is essentially the exact
+        // same as that detailed in Aho and Corasick's original paper. Refer to
+        // section 3 in said paper for more details.
+        this.rootNode.failureLink = this.rootNode;
+        const queue = new Queue_1.Queue();
+        for (const node of this.rootNode.edges.values()) {
+            node.failureLink = this.rootNode;
+            queue.push(node);
+        }
+        while (queue.length > 0) {
+            const node = queue.shift();
+            for (const [char, childNode] of node.edges) {
+                let cur = node.failureLink;
+                while (!cur.edges.get(char) && cur !== this.rootNode)
+                    cur = cur.failureLink;
+                childNode.failureLink = cur.edges.get(char) ?? this.rootNode;
+                queue.push(childNode);
+            }
+            node.outputLink = node.failureLink.isOutputNode ? node.failureLink : node.failureLink.outputLink;
+        }
+    }
+    useUnderlyingEdgeCollectionImplementation(node) {
+        node.edges = node.edges.underlyingImplementation;
+        for (const childNode of node.edges.values())
+            this.useUnderlyingEdgeCollectionImplementation(childNode);
+    }
+}
+exports.WhitelistedTermMatcher = WhitelistedTermMatcher;
+
+
+/***/ }),
+
+/***/ 2144:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.hashPartialMatch = exports.BlacklistTrieNode = void 0;
+const ForwardingEdgeCollection_1 = __nccwpck_require__(6164);
+class BlacklistTrieNode {
+    constructor() {
+        this.edges = new ForwardingEdgeCollection_1.ForwardingEdgeCollection();
+        this.termId = -1;
+        this.flags = 0;
+    }
+}
+exports.BlacklistTrieNode = BlacklistTrieNode;
+function hashPartialMatch(step, termId) {
+    return `${step}-${termId}`;
+}
+exports.hashPartialMatch = hashPartialMatch;
+
+
+/***/ }),
+
+/***/ 2201:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.WhitelistTrieNode = void 0;
+const ForwardingEdgeCollection_1 = __nccwpck_require__(6164);
+class WhitelistTrieNode {
+    constructor() {
+        this.edges = new ForwardingEdgeCollection_1.ForwardingEdgeCollection();
+        this.termId = -1;
+        this.isOutputNode = false;
+    }
+}
+exports.WhitelistTrieNode = WhitelistTrieNode;
+
+
+/***/ }),
+
+/***/ 5809:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.ArrayEdgeCollection = void 0;
+class ArrayEdgeCollection {
+    constructor() {
+        this.edges = [];
+        this.dirty = false;
+    }
+    set(char, node) {
+        // Prefer overwriting an existing edge.
+        const index = this.edges.findIndex((edge) => edge[0] === char);
+        if (index === -1) {
+            this.edges.push([char, node]);
+            this.dirty = true;
+        }
+        else {
+            this.edges[index][1] = node;
+        }
+    }
+    get(char) {
+        if (this.edges.length <= ArrayEdgeCollection.binarySearchThreshold) {
+            for (const edge of this.edges) {
+                if (edge[0] === char)
+                    return edge[1];
+            }
+            return;
+        }
+        if (this.dirty) {
+            // Sort by character value.
+            this.edges.sort(
+            /* istanbul ignore next: not possible to write a robust test for this */
+            (a, b) => (a[0] < b[0] ? -1 : b[0] < a[0] ? 1 : 0));
+            this.dirty = false;
+        }
+        let low = 0;
+        let high = this.edges.length - 1;
+        while (low <= high) {
+            const mid = (low + high) >>> 1;
+            const edge = this.edges[mid];
+            if (edge[0] > char)
+                high = mid - 1;
+            else if (edge[0] === char)
+                return edge[1];
+            else
+                low = mid + 1;
+        }
+    }
+    get size() {
+        return this.edges.length;
+    }
+    keys() {
+        return this.edges.map((edge) => edge[0]).values();
+    }
+    values() {
+        return this.edges.map((edge) => edge[1]).values();
+    }
+    [Symbol.iterator]() {
+        return this.edges.values();
+    }
+}
+exports.ArrayEdgeCollection = ArrayEdgeCollection;
+// Crossover point at which binary search becomes faster than a linear
+// search. Somewhat arbitrary as benchmarking get() is hard (both linear
+// search and binary search execute in less than one-tenth of a millisecond
+// at the scale we're looking at) but micro-benchmarks seem to point to 8-12
+// being a crossover point.
+ArrayEdgeCollection.binarySearchThreshold = 10;
+
+
+/***/ }),
+
+/***/ 5067:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.BucketEdgeCollection = void 0;
+class BucketEdgeCollection {
+    constructor() {
+        this._size = 0;
+        this.buckets = new Array(26);
+    }
+    set(char, node) {
+        const k = char - 97 /* LowerA */;
+        // Only increment the size if we didn't already have a node corresponding to it.
+        if (!this.buckets[k])
+            this._size++;
+        this.buckets[k] = node;
+    }
+    get(char) {
+        const k = char - 97 /* LowerA */;
+        if (k >= 0 && k < 26)
+            return this.buckets[k];
+    }
+    get size() {
+        return this._size;
+    }
+    *keys() {
+        for (let i = 0; i < 26; i++) {
+            if (this.buckets[i] !== undefined)
+                yield i + 97 /* LowerA */;
+        }
+    }
+    *values() {
+        for (let i = 0; i < 26; i++) {
+            if (this.buckets[i] !== undefined)
+                yield this.buckets[i];
+        }
+    }
+    *[Symbol.iterator]() {
+        for (let i = 0; i < 26; i++) {
+            if (this.buckets[i] !== undefined)
+                yield [i + 97 /* LowerA */, this.buckets[i]];
+        }
+    }
+}
+exports.BucketEdgeCollection = BucketEdgeCollection;
+
+
+/***/ }),
+
+/***/ 6164:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.ForwardingEdgeCollection = void 0;
+const Char_1 = __nccwpck_require__(8861);
+const ArrayEdgeCollection_1 = __nccwpck_require__(5809);
+const BucketEdgeCollection_1 = __nccwpck_require__(5067);
+class ForwardingEdgeCollection {
+    constructor() {
+        this._underlyingImplementation = new ArrayEdgeCollection_1.ArrayEdgeCollection();
+        this.implementation = 0 /* Array */;
+        this.areKeysAllLowerCase = true;
+    }
+    set(char, node) {
+        this.areKeysAllLowerCase && (this.areKeysAllLowerCase = Char_1.isLowerCase(char));
+        if (!this.areKeysAllLowerCase && this.implementation === 1 /* Bucket */) {
+            this.useImplementation(this.selectImplementation());
+        }
+        this._underlyingImplementation.set(char, node);
+        this.useImplementation(this.selectImplementation());
+    }
+    get(char) {
+        return this._underlyingImplementation.get(char);
+    }
+    get size() {
+        return this._underlyingImplementation.size;
+    }
+    keys() {
+        return this._underlyingImplementation.keys();
+    }
+    values() {
+        return this._underlyingImplementation.values();
+    }
+    get underlyingImplementation() {
+        return this._underlyingImplementation;
+    }
+    [Symbol.iterator]() {
+        return this._underlyingImplementation[Symbol.iterator]();
+    }
+    selectImplementation() {
+        // These thresholds are all somewhat arbitrary as all implementations
+        // execute in less than one-tenth of a millisecond at the scale we're at
+        // here. However, micro-benchmarks point to the bucket implementation
+        // always being faster when it's applicable (lower-case ASCII
+        // characters). As it's not very memory-efficient for small numbers of
+        // edges, we use the array implementation if the size is less than 10
+        // and the bucket implementation otherwise.
+        //
+        // When the bucket implementation is not available we choose between the
+        // array and map implementation. Both are fairly fast; though the map is
+        // fastest, the difference is not noticeable until ~50-60 edges are
+        // being stored. Thus, as the array implementation uses less memory, we
+        // choose it for medium sized collections and use the map implementation
+        // in all other cases.
+        if (this.size <= 10)
+            return 0 /* Array */;
+        if (this.areKeysAllLowerCase)
+            return 1 /* Bucket */;
+        if (this.size <= 35)
+            return 0 /* Array */;
+        return 2 /* Map */;
+    }
+    useImplementation(newImplementation) {
+        if (this.implementation === newImplementation)
+            return;
+        const newCollection = this.instantiateImplementation(newImplementation);
+        for (const [k, v] of this._underlyingImplementation)
+            newCollection.set(k, v);
+        this._underlyingImplementation = newCollection;
+        this.implementation = newImplementation;
+    }
+    instantiateImplementation(implementation) {
+        switch (implementation) {
+            case 0 /* Array */:
+                /* istanbul ignore next: instantiateImplementation() should never be called with Array */
+                return new ArrayEdgeCollection_1.ArrayEdgeCollection();
+            case 1 /* Bucket */:
+                return new BucketEdgeCollection_1.BucketEdgeCollection();
+            case 2 /* Map */:
+                return new Map();
+        }
+    }
+}
+exports.ForwardingEdgeCollection = ForwardingEdgeCollection;
+
+
+/***/ }),
+
+/***/ 3001:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.RegExpMatcher = void 0;
+const Util_1 = __nccwpck_require__(3025);
+const TransformerSet_1 = __nccwpck_require__(1690);
+const Char_1 = __nccwpck_require__(8861);
+const CharacterIterator_1 = __nccwpck_require__(8460);
+const IntervalCollection_1 = __nccwpck_require__(9071);
+const MatchPayload_1 = __nccwpck_require__(7857);
+/**
+ * An implementation of the [[Matcher]] interface using regular expressions and
+ * string searching methods.
+ *
+ * It should be the default choice for users of this package, as though it is
+ * theoretically slower than the more complex [[NfaMatcher]], it uses much less
+ * memory and is more efficient for low/medium numbers of patterns.
+ *
+ * Refer to the documentation of the [[NfaMatcher]] class for further discussion
+ * on when to choose that implementation over this one.
+ */
+class RegExpMatcher {
+    /**
+     * Creates a new [[RegExpMatcher]] with the options given.
+     *
+     * @example
+     * ```typescript
+     * // Use the options provided by the English preset.
+     * const matcher = new RegExpMatcher({
+     * 	...englishDataset.build(),
+     * 	...englishRecommendedTransformers,
+     * });
+     * ```
+     *
+     * @example
+     * ```typescript
+     * // Simple matcher that only has blacklisted patterns.
+     * const matcher = new RegExpMatcher({
+     *  blacklistedTerms: assignIncrementingIds([
+     *      pattern`fuck`,
+     *      pattern`f?uck`, // wildcards (?)
+     *      pattern`bitch`,
+     *      pattern`b[i]tch` // optionals ([i] matches either "i" or "")
+     *  ]),
+     * });
+     *
+     * // Check whether some string matches any of the patterns.
+     * const doesMatch = matcher.hasMatch('fuck you bitch');
+     * ```
+     *
+     * @example
+     * ```typescript
+     * // A more advanced example, with transformers and whitelisted terms.
+     * const matcher = new RegExpMatcher({
+     *  blacklistedTerms: [
+     *      { id: 1, pattern: pattern`penis` },
+     *      { id: 2, pattern: pattern`fuck` },
+     *  ],
+     *  whitelistedTerms: ['pen is'],
+     *  blacklistMatcherTransformers: [
+     *      resolveConfusablesTransformer(), // '🅰' => 'a'
+     *      resolveLeetSpeakTransformer(), // '$' => 's'
+     *      foldAsciiCharCaseTransformer(), // case insensitive matching
+     *      skipNonAlphabeticTransformer(), // 'f.u...c.k' => 'fuck'
+     *      collapseDuplicatesTransformer(), // 'aaaa' => 'a'
+     *  ],
+     * });
+     *
+     * // Output all matches.
+     * console.log(matcher.getAllMatches('fu.....uuuuCK the pen is mightier than the sword!'));
+     * ```
+     *
+     * @param options - Options to use.
+     */
+    constructor({ blacklistedTerms, whitelistedTerms = [], blacklistMatcherTransformers = [], whitelistMatcherTransformers = [], }) {
+        this.blacklistedTerms = this.compileTerms(blacklistedTerms);
+        this.whitelistedTerms = whitelistedTerms;
+        this.blacklistMatcherTransformers = new TransformerSet_1.TransformerSet(blacklistMatcherTransformers);
+        this.whitelistMatcherTransformers = new TransformerSet_1.TransformerSet(whitelistMatcherTransformers);
+    }
+    getAllMatches(input, sorted = false) {
+        const whitelistedIntervals = this.getWhitelistedIntervals(input);
+        const [indices, transformed] = this.applyTransformers(input, this.blacklistMatcherTransformers);
+        const matches = [];
+        for (const blacklistedTerm of this.blacklistedTerms) {
+            for (const match of transformed.matchAll(blacklistedTerm.regExp)) {
+                const matchLength = [...match[0]].length; // spread so we count code points, not code units
+                const startIndex = indices[match.index];
+                // eslint-disable-next-line @typescript-eslint/restrict-plus-operands
+                let endIndex = indices[match.index + matchLength - 1];
+                // Adjust the end index if needed.
+                if (endIndex < transformed.length - 1 && // not the last character
+                    Char_1.isHighSurrogate(transformed.charCodeAt(endIndex)) && // character is a high surrogate
+                    Char_1.isLowSurrogate(transformed.charCodeAt(endIndex + 1)) // next character is a low surrogate
+                ) {
+                    endIndex++;
+                }
+                if (!whitelistedIntervals.query(startIndex, endIndex)) {
+                    matches.push({ termId: blacklistedTerm.id, startIndex, endIndex, matchLength });
+                }
+            }
+        }
+        if (sorted)
+            matches.sort(MatchPayload_1.compareMatchByPositionAndId);
+        return matches;
+    }
+    hasMatch(input) {
+        const whitelistedIntervals = this.getWhitelistedIntervals(input);
+        const [indices, transformed] = this.applyTransformers(input, this.blacklistMatcherTransformers);
+        for (const blacklistedTerm of this.blacklistedTerms) {
+            for (const match of transformed.matchAll(blacklistedTerm.regExp)) {
+                const matchLength = [...match[0]].length; // spread so we count code points, not code units
+                const startIndex = indices[match.index];
+                // eslint-disable-next-line @typescript-eslint/restrict-plus-operands
+                let endIndex = indices[match.index + matchLength - 1];
+                // Adjust the end index if needed.
+                if (endIndex < transformed.length - 1 && // not the last character
+                    Char_1.isHighSurrogate(transformed.charCodeAt(endIndex)) && // character is a high surrogate
+                    Char_1.isLowSurrogate(transformed.charCodeAt(endIndex + 1)) // next character is a low surrogate
+                ) {
+                    endIndex++;
+                }
+                if (!whitelistedIntervals.query(startIndex, endIndex))
+                    return true;
+            }
+        }
+        return false;
+    }
+    getWhitelistedIntervals(input) {
+        const matches = new IntervalCollection_1.IntervalCollection();
+        const [indices, transformed] = this.applyTransformers(input, this.whitelistMatcherTransformers);
+        for (const whitelistedTerm of this.whitelistedTerms) {
+            const length = [...whitelistedTerm].length;
+            let lastEnd = 0;
+            for (let startIndex = transformed.indexOf(whitelistedTerm, lastEnd); startIndex !== -1; startIndex = transformed.indexOf(whitelistedTerm, lastEnd)) {
+                let endIndex = indices[startIndex + length - 1];
+                // Adjust the end index if needed.
+                if (endIndex < transformed.length - 1 && // not the last character
+                    Char_1.isHighSurrogate(transformed.charCodeAt(endIndex)) && // character is a high surrogate
+                    Char_1.isLowSurrogate(transformed.charCodeAt(endIndex + 1)) // next character is a low surrogate
+                ) {
+                    endIndex++;
+                }
+                matches.insert(indices[startIndex], endIndex);
+                lastEnd = endIndex + 1;
+            }
+        }
+        return matches;
+    }
+    applyTransformers(input, transformers) {
+        const indices = [];
+        let transformed = '';
+        const iter = new CharacterIterator_1.CharacterIterator(input);
+        for (const char of iter) {
+            const transformedChar = transformers.applyTo(char);
+            if (transformedChar !== undefined) {
+                indices.push(iter.position);
+                transformed += String.fromCodePoint(transformedChar);
+            }
+        }
+        transformers.resetAll();
+        return [indices, transformed];
+    }
+    compileTerms(terms) {
+        const compiled = [];
+        const seenIds = new Set();
+        for (const term of terms) {
+            if (seenIds.has(term.id))
+                throw new Error(`Duplicate blacklisted term ID ${term.id}.`);
+            if (Util_1.potentiallyMatchesEmptyString(term.pattern)) {
+                throw new Error(`Pattern with ID ${term.id} potentially matches empty string; this is unsupported.`);
+            }
+            compiled.push({
+                id: term.id,
+                regExp: Util_1.compilePatternToRegExp(term.pattern),
+            });
+            seenIds.add(term.id);
+        }
+        return compiled;
+    }
+}
+exports.RegExpMatcher = RegExpMatcher;
+
+
+/***/ }),
+
+/***/ 5069:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.SyntaxKind = void 0;
+/**
+ * An enumeration of the kinds of nodes there are.
+ */
+var SyntaxKind;
+(function (SyntaxKind) {
+    SyntaxKind[SyntaxKind["Optional"] = 0] = "Optional";
+    SyntaxKind[SyntaxKind["Wildcard"] = 1] = "Wildcard";
+    SyntaxKind[SyntaxKind["Literal"] = 2] = "Literal";
+    SyntaxKind[SyntaxKind["BoundaryAssertion"] = 3] = "BoundaryAssertion";
+})(SyntaxKind = exports.SyntaxKind || (exports.SyntaxKind = {}));
+
+
+/***/ }),
+
+/***/ 6966:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.Parser = void 0;
+const Char_1 = __nccwpck_require__(8861);
+const CharacterIterator_1 = __nccwpck_require__(8460);
+const Nodes_1 = __nccwpck_require__(5069);
+const ParserError_1 = __nccwpck_require__(3403);
+const supportsEscaping = [
+    92 /* Backslash */,
+    91 /* LeftSquareBracket */,
+    93 /* RightSquareBracket */,
+    63 /* QuestionMark */,
+    124 /* VerticalBar */,
+];
+const supportsEscapingList = supportsEscaping.map((char) => `'${String.fromCodePoint(char)}'`).join(', ');
+const eof = -1;
+class Parser {
+    constructor() {
+        this.input = '';
+        this.line = 1;
+        this.column = 1;
+        this.position = 0;
+        this.lastColumn = 1;
+        this.lastWidth = 0;
+    }
+    parse(input) {
+        this.setInput(input);
+        const nodes = [];
+        const firstNode = this.nextNode();
+        const requireWordBoundaryAtStart = firstNode?.kind === Nodes_1.SyntaxKind.BoundaryAssertion;
+        if (firstNode && !requireWordBoundaryAtStart)
+            nodes.push(firstNode);
+        let requireWordBoundaryAtEnd = false;
+        while (!this.done) {
+            const pos = this.mark();
+            const node = this.nextNode();
+            if (node.kind !== Nodes_1.SyntaxKind.BoundaryAssertion) {
+                nodes.push(node);
+                continue;
+            }
+            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+            if (!this.done) {
+                this.reportError('Boundary assertions are not supported in this position; they are only allowed at the start / end of the pattern.', pos);
+            }
+            requireWordBoundaryAtEnd = true;
+        }
+        return { requireWordBoundaryAtStart, requireWordBoundaryAtEnd, nodes };
+    }
+    setInput(input) {
+        this.input = input;
+        this.line = 1;
+        this.column = 1;
+        this.position = 0;
+        this.lastColumn = 1;
+        this.lastWidth = 0;
+        return this;
+    }
+    nextNode() {
+        switch (this.peek()) {
+            case eof:
+                return undefined;
+            case 91 /* LeftSquareBracket */:
+                return this.parseOptional();
+            case 93 /* RightSquareBracket */:
+                this.reportError(`Unexpected ']' with no corresponding '['.`);
+            case 63 /* QuestionMark */:
+                return this.parseWildcard();
+            case 124 /* VerticalBar */:
+                return this.parseBoundaryAssertion();
+            default:
+                return this.parseLiteral();
+        }
+    }
+    get done() {
+        return this.position >= this.input.length;
+    }
+    // Optional ::= '[' Wildcard | Text ']'
+    parseOptional() {
+        const preOpenBracketPos = this.mark();
+        this.next(); // '['
+        const postOpenBracketPos = this.mark();
+        if (this.done)
+            this.reportError("Unexpected unclosed '['.", preOpenBracketPos);
+        if (this.accept('['))
+            this.reportError('Unexpected nested optional node.', postOpenBracketPos);
+        const childNode = this.nextNode();
+        if (childNode.kind === Nodes_1.SyntaxKind.BoundaryAssertion) {
+            this.reportError('Boundary assertions are not supported in this position; they are only allowed at the start / end of the pattern.', postOpenBracketPos);
+        }
+        if (!this.accept(']'))
+            this.reportError("Unexpected unclosed '['.");
+        return { kind: Nodes_1.SyntaxKind.Optional, childNode: childNode };
+    }
+    // Wildcard ::= '?'
+    parseWildcard() {
+        this.next(); // '?'
+        return { kind: Nodes_1.SyntaxKind.Wildcard };
+    }
+    // BoundaryAssertion ::= '|'
+    parseBoundaryAssertion() {
+        this.next(); // '|'
+        return { kind: Nodes_1.SyntaxKind.BoundaryAssertion };
+    }
+    // Literal              ::= (NON_SPECIAL | '\' SUPPORTS_ESCAPING)+
+    // NON_SPECIAL         ::= _any character other than '\', '?', '[', ']', or '|'_
+    // SUPPORTS_ESCAPING   ::= '\' | '[' | ']' | '?' | '|'
+    parseLiteral() {
+        const chars = [];
+        while (!this.done) {
+            if (this.accept('[]?|')) {
+                this.backup();
+                break;
+            }
+            const next = this.next();
+            if (next === 92 /* Backslash */) {
+                // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+                if (this.done) {
+                    this.backup();
+                    this.reportError('Unexpected trailing backslash.');
+                }
+                // Can we escape the next character?
+                const escaped = this.next();
+                if (!supportsEscaping.includes(escaped)) {
+                    const repr = String.fromCodePoint(escaped);
+                    this.backup();
+                    this.reportError(`Cannot escape character '${repr}'; the only characters that can be escaped are the following: ${supportsEscapingList}.`);
+                }
+                chars.push(escaped);
+            }
+            else {
+                chars.push(next);
+            }
+        }
+        return { kind: Nodes_1.SyntaxKind.Literal, chars: chars };
+    }
+    reportError(message, { line = this.line, column = this.column } = {}) {
+        throw new ParserError_1.ParserError(message, line, column);
+    }
+    // Marks the current position.
+    mark() {
+        return { line: this.line, column: this.column };
+    }
+    // Accepts any code point in the charset provided. Iff accepted, the character is consumed.
+    accept(charset) {
+        const next = this.next();
+        const iter = new CharacterIterator_1.CharacterIterator(charset);
+        for (const char of iter) {
+            if (char === next)
+                return true;
+        }
+        this.backup();
+        return false;
+    }
+    // Reads one code point from the input, without consuming it.
+    peek() {
+        const next = this.next();
+        this.backup();
+        return next;
+    }
+    // Consumes one code point from the input.
+    next() {
+        if (this.done)
+            return eof;
+        const char = this.input.charCodeAt(this.position++);
+        this.lastWidth = 1;
+        if (char === 10 /* Newline */) {
+            this.lastColumn = this.column;
+            this.column = 1;
+            this.line++;
+            return char;
+        }
+        this.lastColumn = this.column++;
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+        if (!Char_1.isHighSurrogate(char) || this.done)
+            return char;
+        // Do we have a surrogate pair?
+        const next = this.input.charCodeAt(this.position);
+        if (Char_1.isLowSurrogate(next)) {
+            this.position++;
+            this.lastWidth++;
+            return Char_1.convertSurrogatePairToCodePoint(char, next);
+        }
+        return char;
+    }
+    // Steps back one character; can only be called once per call to next().
+    backup() {
+        this.position -= this.lastWidth;
+        this.column = this.lastColumn;
+        // Adjust line count if needed.
+        if (this.lastWidth === 1 && this.input.charCodeAt(this.position) === 10 /* Newline */) {
+            this.line--;
+        }
+    }
+}
+exports.Parser = Parser;
+
+
+/***/ }),
+
+/***/ 3403:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.ParserError = void 0;
+/**
+ * Custom error thrown by the parser when syntactical errors are detected.
+ */
+class ParserError extends Error {
+    constructor(message, line, column) {
+        super(`${line}:${column}: ${message}`);
+        this.name = 'ParserError';
+        this.line = line;
+        this.column = column;
+    }
+}
+exports.ParserError = ParserError;
+
+
+/***/ }),
+
+/***/ 7148:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.parseRawPattern = exports.pattern = void 0;
+const Parser_1 = __nccwpck_require__(6966);
+const parser = new Parser_1.Parser();
+/**
+ * Parses a pattern, which matches a set of strings; see the `Syntax` section
+ * for details. This function is intended to be called as a [template
+ * tag](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Template_literals#tagged_templates).
+ *
+ * **Syntax**
+ *
+ * Generally speaking, in patterns, characters are interpreted literally. That
+ * is, they match exactly what they are: `a` matches an `a`, `b` matches a `b`,
+ * `;` matches a `;`, and so on.
+ *
+ * However, there are several constructs that have special meaning:
+ *
+ * - `[expr]` matches either the empty string or `expr` (an **optional
+ *   expression**). `expr` may be a sequence of literal characters or a wildcard
+ *   (see below).
+ * - `?` matches any character (a **wildcard**).
+ * - A `|` at the start or end of the pattern asserts position at a word
+ *   boundary (a **word boundary assertion**). If `|` is at the start, it
+ *   ensures that the match either starts at the start of the string or a non-
+ *   word character preceding it; if it is at the end, it ensures that the match
+ *   either ends at the end of the string or a non-word character follows it.
+ *
+ *   A word character is an lower-case or upper-case ASCII alphabet character or
+ *   an ASCII digit.
+ * - In a literal, a backslash may be used to **escape** one of the
+ *   meta-characters mentioned above so that it does match literally: `\\[`
+ *   matches `[`, and does not mark the start of an optional expression.
+ *
+ *   **Note about escapes**
+ *
+ *   As this function operates on raw strings, double-escaping backslashes is
+ *   not necessary:
+ *
+ *   ```typescript
+ *   // Use this:
+ *   const parsed = pattern`hello \[`;
+ *   // Don't use this:
+ *   const parsed = pattern`hello \\[`;
+ *   ```
+ *
+ * **Examples**
+ *
+ * - `baz` matches `baz` exactly.
+ *
+ * - `b\[ar` matches `b[ar` exactly.
+ *
+ * - `d?ude` matches `d`, then any character, then `ude`. All of the following
+ *   strings are matched by this pattern:
+ *   - `dyude`
+ *   - `d;ude`
+ *   - `d!ude`
+ *
+ * - `h[?]ello` matches either `h`, any character, then `ello` or the literal
+ *   string `hello`. The set of strings it matches is equal to the union of the
+ *   set of strings that the two patterns `hello` and `h?ello` match. All of the
+ *   following strings are matched by this pattern:
+ *   - `hello`
+ *   - `h!ello`
+ *   - `h;ello`
+ *
+ * - `|foobar|` asserts position at a word boundary, matches the literal string
+ *   `foobar`, and asserts position at a word boundary:
+ *   - `foobar` matches, as the start and end of string count as word
+ *     boundaries;
+ *   - `yofoobar` does _not_ match, as `f` is immediately preceded by a word
+ *     character;
+ *   - `hello foobar bye` matches, as `f` is immediately preceded by a non-word
+ *     character, and `r` is immediately followed by a non-word character.
+ *
+ * **Grammar**
+ *
+ * ```
+ * Pattern  ::= '['? Atom* ']'?
+ * Atom     ::= Literal | Wildcard | Optional
+ * Optional ::= '[' Literal | Wildcard ']'
+ * Literal  ::= (NON_SPECIAL | '\' SUPPORTS_ESCAPING)+
+ *
+ * NON_SPECIAL       ::= _any character other than '\', '?', '[', ']', or '|'_
+ * SUPPORTS_ESCAPING ::= '\' | '[' | ']' | '?' | '|'
+ * ```
+ *
+ * @example
+ * ```typescript
+ * const parsed = pattern`hello?`; // match "hello", then any character
+ * ```
+ *
+ * @example
+ * ```typescript
+ * const parsed = pattern`w[o]rld`; // match "wrld" or "world"
+ * ```
+ *
+ * @example
+ * ```typescript
+ * const parsed = pattern`my initials are \[??\]`; // match "my initials are [", then any two characters, then a "]"
+ * ```
+ *
+ * @returns The parsed pattern, which can then be used with the
+ * [[RegExpMatcher]] or the [[NfaMatcher]].
+ * @throws [[ParserError]] if a syntactical error was detected while parsing the
+ * pattern.
+ * @see [[parseRawPattern]] if you want to parse a string into a pattern without
+ * using a template tag.
+ */
+function pattern(strings, ...expressions) {
+    let result = strings.raw[0];
+    for (let i = 0; i < expressions.length; i++) {
+        result += expressions[i];
+        result += strings.raw[i + 1];
+    }
+    return parser.parse(result);
+}
+exports.pattern = pattern;
+/**
+ * Parses a string as a pattern directly.
+ *
+ * **Note**
+ *
+ * It is recommended to use the [[pattern | pattern template tag]] instead of
+ * this function for literal patterns (i.e. ones without dynamic content).
+ *
+ * @param pattern - The string to parse.
+ * @throws [[ParserError]] if a syntactical error was detected while parsing the
+ * pattern.
+ * @returns The parsed pattern, which can then be used with the
+ * [[RegExpMatcher]] or the [[NfaMatcher]].
+ */
+function parseRawPattern(pattern) {
+    return parser.parse(pattern);
+}
+exports.parseRawPattern = parseRawPattern;
+
+
+/***/ }),
+
+/***/ 3596:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.simplify = void 0;
+const Nodes_1 = __nccwpck_require__(5069);
+// Returns a list of patterns using simple constructs that match the same set of strings
+// as the original pattern.
+function simplify(nodes) {
+    const result = [[]];
+    for (const node of nodes) {
+        if (node.kind === Nodes_1.SyntaxKind.Optional) {
+            // Given the pattern [p1, p2, p3, ..., pm] where p1, p2, p3, etc., are
+            // wildcard / literal nodes and pm is an optional node, we can
+            // simplify it to two patterns (one where the optional node exists,
+            // and one where it does not):
+            // 	[p1, p2, p3, ..., pm-1], [p1, p2, p3, ..., pm]
+            //
+            // If there are multiple optional nodes, the idea is the same; we
+            // "fork" the pattern whenever we find an optional node and
+            // continue doing so until all nodes have been handled.
+            //
+            // N.B.: This technique results in the number of simplified patterns
+            // growing exponentially, as having two possibilities at each
+            // optional node results in 2^n patterns where n is the number of
+            // optional nodes. However, in practice, this is unlikely to be an
+            // issue.
+            const mark = result.length;
+            for (let i = 0; i < mark; i++) {
+                const pre = result[i];
+                result.push([...pre, node.childNode]);
+            }
+        }
+        else {
+            for (const nodes of result)
+                nodes.push(node);
+        }
+    }
+    return result.map(mergeLiteralNodeRuns);
+}
+exports.simplify = simplify;
+function mergeLiteralNodeRuns(nodes) {
+    const merged = [];
+    let i = 0;
+    while (i < nodes.length) {
+        const node = nodes[i++];
+        if (node.kind !== Nodes_1.SyntaxKind.Literal) {
+            merged.push(node);
+            continue;
+        }
+        // Find all literal nodes right after the current one, and merge their content.
+        const chars = [...node.chars];
+        while (i < nodes.length && nodes[i].kind === Nodes_1.SyntaxKind.Literal) {
+            chars.push(...nodes[i++].chars);
+        }
+        merged.push({ kind: Nodes_1.SyntaxKind.Literal, chars: chars });
+    }
+    return merged;
+}
+
+
+/***/ }),
+
+/***/ 3025:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.groupByNodeType = exports.computePatternMatchLength = exports.getRegExpStringForNode = exports.compilePatternToRegExp = exports.potentiallyMatchesEmptyString = void 0;
+const Nodes_1 = __nccwpck_require__(5069);
+function potentiallyMatchesEmptyString(pattern) {
+    return pattern.nodes.every((node) => node.kind === Nodes_1.SyntaxKind.Optional);
+}
+exports.potentiallyMatchesEmptyString = potentiallyMatchesEmptyString;
+function compilePatternToRegExp(pattern) {
+    let regExpStr = '';
+    if (pattern.requireWordBoundaryAtStart)
+        regExpStr += '\\b';
+    for (const node of pattern.nodes)
+        regExpStr += getRegExpStringForNode(node);
+    if (pattern.requireWordBoundaryAtEnd)
+        regExpStr += `\\b`;
+    return new RegExp(regExpStr, 'gs');
+}
+exports.compilePatternToRegExp = compilePatternToRegExp;
+const regExpSpecialChars = ['[', '.', '*', '+', '?', '^', '$', '{', '}', '(', ')', '|', '[', '\\', ']'].map((str) => str.charCodeAt(0));
+function getRegExpStringForNode(node) {
+    switch (node.kind) {
+        case Nodes_1.SyntaxKind.Literal: {
+            let str = '';
+            for (const char of node.chars) {
+                if (regExpSpecialChars.includes(char))
+                    str += '\\';
+                str += String.fromCodePoint(char);
+            }
+            return str;
+        }
+        case Nodes_1.SyntaxKind.Optional:
+            return `(?:${getRegExpStringForNode(node.childNode)})?`;
+        case Nodes_1.SyntaxKind.Wildcard:
+            return `.`;
+    }
+}
+exports.getRegExpStringForNode = getRegExpStringForNode;
+function computePatternMatchLength(nodes) {
+    return nodes.reduce((total, node) => total + (node.kind === Nodes_1.SyntaxKind.Wildcard ? 1 : node.chars.length), 0);
+}
+exports.computePatternMatchLength = computePatternMatchLength;
+function groupByNodeType(nodes) {
+    let i = 0;
+    const groups = [];
+    while (i < nodes.length) {
+        const node = nodes[i];
+        if (node.kind === Nodes_1.SyntaxKind.Literal) {
+            const literals = [];
+            while (i < nodes.length && nodes[i].kind === Nodes_1.SyntaxKind.Literal)
+                literals.push(nodes[i++]);
+            groups.push({ literals, isLiteralGroup: true });
+        }
+        else {
+            const mark = i;
+            while (i < nodes.length && nodes[i].kind === Nodes_1.SyntaxKind.Wildcard)
+                i++;
+            groups.push({ wildcardCount: i - mark, isLiteralGroup: false });
+        }
+    }
+    return groups;
+}
+exports.groupByNodeType = groupByNodeType;
+
+
+/***/ }),
+
+/***/ 1660:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.englishDataset = exports.englishRecommendedTransformers = exports.englishRecommendedWhitelistMatcherTransformers = exports.englishRecommendedBlacklistMatcherTransformers = void 0;
+const DataSet_1 = __nccwpck_require__(2537);
+const Pattern_1 = __nccwpck_require__(7148);
+const collapse_duplicates_1 = __nccwpck_require__(5674);
+const resolve_confusables_1 = __nccwpck_require__(474);
+const resolve_leetspeak_1 = __nccwpck_require__(2633);
+const skip_non_alphabetic_1 = __nccwpck_require__(6458);
+const to_ascii_lowercase_1 = __nccwpck_require__(6336);
+/**
+ * A set of transformers to be used when matching blacklisted patterns with the
+ * [[englishDataset | english word dataset]].
+ */
+exports.englishRecommendedBlacklistMatcherTransformers = [
+    resolve_confusables_1.resolveConfusablesTransformer(),
+    resolve_leetspeak_1.resolveLeetSpeakTransformer(),
+    to_ascii_lowercase_1.toAsciiLowerCaseTransformer(),
+    skip_non_alphabetic_1.skipNonAlphabeticTransformer(),
+    collapse_duplicates_1.collapseDuplicatesTransformer({
+        defaultThreshold: 1,
+        customThresholds: new Map([
+            ['b', 2],
+            ['e', 2],
+            ['o', 2],
+            ['l', 2],
+            ['s', 2],
+            ['g', 2], // ni_gg_er
+        ]),
+    }),
+];
+/**
+ * A set of transformers to be used when matching whitelisted terms with the
+ * [[englishDataset | english word dataset]].
+ */
+exports.englishRecommendedWhitelistMatcherTransformers = [
+    to_ascii_lowercase_1.toAsciiLowerCaseTransformer(),
+    collapse_duplicates_1.collapseDuplicatesTransformer({
+        defaultThreshold: Infinity,
+        customThresholds: new Map([[' ', 1]]), // collapse spaces
+    }),
+];
+/**
+ * Recommended transformers to be used with the [[englishDataset | english word
+ * dataset]] and the [[RegExpMatcher]] or the [[NfaMatcher]].
+ */
+exports.englishRecommendedTransformers = {
+    blacklistMatcherTransformers: exports.englishRecommendedBlacklistMatcherTransformers,
+    whitelistMatcherTransformers: exports.englishRecommendedWhitelistMatcherTransformers,
+};
+/**
+ * A dataset of profane English words.
+ *
+ * @example
+ * ```typescript
+ * const matcher = new RegExpMatcher({
+ * 	...englishDataset.build(),
+ * 	...englishRecommendedTransformers,
+ * });
+ * ```
+ *
+ * @example
+ * ```typescript
+ * // Extending the data-set by adding a new word and removing an existing one.
+ * const myDataset = new DataSet()
+ * 	.addAll(englishDataset)
+ * 	.removePhrasesIf((phrase) => phrase.metadata.originalWord === 'vagina')
+ * 	.addPhrase((phrase) => phrase.addPattern(pattern`|balls|`));
+ * ```
+ *
+ * @copyright
+ * The words are taken from the [cuss](https://github.com/words/cuss) project,
+ * with some modifications.
+ *
+ * ```text
+ * (The MIT License)
+ *
+ * Copyright (c) 2016 Titus Wormer <tituswormer@gmail.com>
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining
+ * a copy of this software and associated documentation files (the
+ * 'Software'), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sublicense, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject to
+ * the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+ * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * ```
+ */
+exports.englishDataset = new DataSet_1.DataSet()
+    .addPhrase((phrase) => phrase
+    .setMetadata({ originalWord: 'abbo' })
+    .addPattern(Pattern_1.pattern `abbo`)
+    .addWhitelistedTerm('abbot'))
+    .addPhrase((phrase) => phrase.setMetadata({ originalWord: 'abeed' }).addPattern(Pattern_1.pattern `ab[b]eed`))
+    .addPhrase((phrase) => phrase.setMetadata({ originalWord: 'africoon' }).addPattern(Pattern_1.pattern `africoon`))
+    .addPhrase((phrase) => phrase
+    .setMetadata({ originalWord: 'anal' })
+    .addPattern(Pattern_1.pattern `|anal`)
+    .addWhitelistedTerm('analabos')
+    .addWhitelistedTerm('analagous')
+    .addWhitelistedTerm('analav')
+    .addWhitelistedTerm('analy')
+    .addWhitelistedTerm('analog')
+    .addWhitelistedTerm('an al')
+    .addPattern(Pattern_1.pattern `danal`)
+    .addPattern(Pattern_1.pattern `eanal`)
+    .addPattern(Pattern_1.pattern `fanal`)
+    .addWhitelistedTerm('fan al')
+    .addPattern(Pattern_1.pattern `ganal`)
+    .addWhitelistedTerm('gan al')
+    .addPattern(Pattern_1.pattern `ianal`)
+    .addWhitelistedTerm('ian al')
+    .addPattern(Pattern_1.pattern `janal`)
+    .addWhitelistedTerm('trojan al')
+    .addPattern(Pattern_1.pattern `kanal`)
+    .addPattern(Pattern_1.pattern `lanal`)
+    .addWhitelistedTerm('lan al')
+    .addPattern(Pattern_1.pattern `lanal`)
+    .addWhitelistedTerm('lan al')
+    .addPattern(Pattern_1.pattern `oanal|`)
+    .addPattern(Pattern_1.pattern `panal`)
+    .addWhitelistedTerm('pan al')
+    .addPattern(Pattern_1.pattern `qanal`)
+    .addPattern(Pattern_1.pattern `ranal`)
+    .addPattern(Pattern_1.pattern `sanal`)
+    .addPattern(Pattern_1.pattern `tanal`)
+    .addWhitelistedTerm('tan al')
+    .addPattern(Pattern_1.pattern `uanal`)
+    .addWhitelistedTerm('uan al')
+    .addPattern(Pattern_1.pattern `vanal`)
+    .addWhitelistedTerm('van al')
+    .addPattern(Pattern_1.pattern `wanal`)
+    .addPattern(Pattern_1.pattern `xanal`)
+    .addWhitelistedTerm('texan al')
+    .addPattern(Pattern_1.pattern `yanal`)
+    .addPattern(Pattern_1.pattern `zanal`))
+    .addPhrase((phrase) => phrase
+    .setMetadata({ originalWord: 'anus' })
+    .addPattern(Pattern_1.pattern `anus`)
+    .addWhitelistedTerm('an us')
+    .addWhitelistedTerm('tetanus')
+    .addWhitelistedTerm('uranus')
+    .addWhitelistedTerm('janus')
+    .addWhitelistedTerm('manus'))
+    .addPhrase((phrase) => phrase.setMetadata({ originalWord: 'arabush' }).addPattern(Pattern_1.pattern `arab[b]ush`))
+    .addPhrase((phrase) => phrase
+    .setMetadata({ originalWord: 'arse' })
+    .addPattern(Pattern_1.pattern `|ars[s]e`)
+    .addWhitelistedTerm('arsen'))
+    .addPhrase((phrase) => phrase
+    .setMetadata({ originalWord: 'ass' })
+    .addPattern(Pattern_1.pattern `|ass`)
+    .addWhitelistedTerm('assa')
+    .addWhitelistedTerm('assem')
+    .addWhitelistedTerm('assen')
+    .addWhitelistedTerm('asser')
+    .addWhitelistedTerm('asset')
+    .addWhitelistedTerm('assev')
+    .addWhitelistedTerm('assi')
+    .addWhitelistedTerm('assoc')
+    .addWhitelistedTerm('assoi')
+    .addWhitelistedTerm('assu'))
+    .addPhrase((phrase) => phrase.setMetadata({ originalWord: 'bestiality' }).addPattern(Pattern_1.pattern `be[e]s[s]tial`))
+    .addPhrase((phrase) => phrase.setMetadata({ originalWord: 'bastard' }).addPattern(Pattern_1.pattern `bas[s]tard`))
+    .addPhrase((phrase) => phrase.setMetadata({ originalWord: 'boob' }).addPattern(Pattern_1.pattern `boob`))
+    .addPhrase((phrase) => phrase
+    .setMetadata({ originalWord: 'boonga' })
+    .addPattern(Pattern_1.pattern `boonga`)
+    .addWhitelistedTerm('baboon ga'))
+    .addPhrase((phrase) => phrase
+    .setMetadata({ originalWord: 'bitch' })
+    .addPattern(Pattern_1.pattern `bitch`)
+    .addPattern(Pattern_1.pattern `bich|`))
+    .addPhrase((phrase) => phrase.setMetadata({ originalWord: 'blowjob' }).addPattern(Pattern_1.pattern `b[b]l[l][o]wj[o]b`))
+    .addPhrase((phrase) => phrase.setMetadata({ originalWord: 'chingchong' }).addPattern(Pattern_1.pattern `chingchong`))
+    .addPhrase((phrase) => phrase
+    .setMetadata({ originalWord: 'chink' })
+    .addPattern(Pattern_1.pattern `chink`)
+    .addWhitelistedTerm('chin k'))
+    .addPhrase((phrase) => phrase
+    .setMetadata({ originalWord: 'cock' })
+    .addPattern(Pattern_1.pattern `|cock|`)
+    .addPattern(Pattern_1.pattern `|cocks`)
+    .addPattern(Pattern_1.pattern `|cockp`)
+    .addPattern(Pattern_1.pattern `|cocke[e]|`)
+    .addWhitelistedTerm('cockney'))
+    .addPhrase((phrase) => phrase
+    .setMetadata({ originalWord: 'cum' })
+    .addPattern(Pattern_1.pattern `|cum`)
+    .addWhitelistedTerm('cumu')
+    .addWhitelistedTerm('cumb'))
+    .addPhrase((phrase) => phrase.setMetadata({ originalWord: 'cunt' }).addPattern(Pattern_1.pattern `|cunt`))
+    .addPhrase((phrase) => phrase
+    .setMetadata({ originalWord: 'deepthroat' })
+    .addPattern(Pattern_1.pattern `deepthro[o]at`)
+    .addPattern(Pattern_1.pattern `deepthro[o]t`))
+    .addPhrase((phrase) => phrase
+    .setMetadata({ originalWord: 'dick' })
+    .addPattern(Pattern_1.pattern `d?ck|`)
+    .addPattern(Pattern_1.pattern `d?cke[e]s|`)
+    .addPattern(Pattern_1.pattern `d?cks|`)
+    .addPattern(Pattern_1.pattern `|dck|`)
+    .addPattern(Pattern_1.pattern `dick`)
+    .addWhitelistedTerm('benedick')
+    .addWhitelistedTerm('dickens'))
+    .addPhrase((phrase) => phrase.setMetadata({ originalWord: 'doggystyle' }).addPattern(Pattern_1.pattern `d[o]g[g]ys[s]t[y]l[l]`))
+    .addPhrase((phrase) => phrase
+    .setMetadata({ originalWord: 'ejaculate' })
+    .addPattern(Pattern_1.pattern `e[e]jacul`)
+    .addPattern(Pattern_1.pattern `e[e]jakul`)
+    .addPattern(Pattern_1.pattern `e[e]acul[l]ate`))
+    .addPhrase((phrase) => phrase
+    .setMetadata({ originalWord: 'fag' })
+    .addPattern(Pattern_1.pattern `|fag`)
+    .addPattern(Pattern_1.pattern `fggot`))
+    .addPhrase((phrase) => phrase.setMetadata({ originalWord: 'fellatio' }).addPattern(Pattern_1.pattern `f[e][e]llat`))
+    .addPhrase((phrase) => phrase.setMetadata({ originalWord: 'felch' }).addPattern(Pattern_1.pattern `fe[e]l[l]ch`))
+    .addPhrase((phrase) => phrase.setMetadata({ originalWord: 'fisting' }).addPattern(Pattern_1.pattern `fistin`))
+    .addPhrase((phrase) => phrase
+    .setMetadata({ originalWord: 'fuck' })
+    .addPattern(Pattern_1.pattern `f[?]ck`)
+    .addPattern(Pattern_1.pattern `|fk`)
+    .addPattern(Pattern_1.pattern `|fu|`)
+    .addPattern(Pattern_1.pattern `|fuk`))
+    .addPhrase((phrase) => phrase.setMetadata({ originalWord: 'gangbang' }).addPattern(Pattern_1.pattern `g[?]ngbang`))
+    .addPhrase((phrase) => phrase.setMetadata({ originalWord: 'handjob' }).addPattern(Pattern_1.pattern `h[?]ndjob`))
+    .addPhrase((phrase) => phrase.setMetadata({ originalWord: 'jizz' }).addPattern(Pattern_1.pattern `jizz`))
+    .addPhrase((phrase) => phrase.setMetadata({ originalWord: 'lubejob' }).addPattern(Pattern_1.pattern `lubejob`))
+    .addPhrase((phrase) => phrase
+    .setMetadata({ originalWord: 'masturbate' })
+    .addPattern(Pattern_1.pattern `m[?]sturbate`)
+    .addPattern(Pattern_1.pattern `masterbate`))
+    .addPhrase((phrase) => phrase
+    .setMetadata({ originalWord: 'nigger' })
+    .addPattern(Pattern_1.pattern `n[i]gger`)
+    .addPattern(Pattern_1.pattern `n[i]gga`)
+    .addPattern(Pattern_1.pattern `|nig|`)
+    .addPattern(Pattern_1.pattern `|nigs|`)
+    .addPattern(Pattern_1.pattern `?igge`)
+    .addWhitelistedTerm('bigge')
+    .addWhitelistedTerm('digge')
+    .addWhitelistedTerm('rigge')
+    .addWhitelistedTerm('snigger'))
+    .addPhrase((phrase) => phrase
+    .setMetadata({ originalWord: 'orgasm' })
+    .addPattern(Pattern_1.pattern `[or]gasm`)
+    .addWhitelistedTerm('gasma'))
+    .addPhrase((phrase) => phrase
+    .setMetadata({ originalWord: 'orgy' })
+    .addPattern(Pattern_1.pattern `orgy`)
+    .addPattern(Pattern_1.pattern `orgies`)
+    .addWhitelistedTerm('porgy'))
+    .addPhrase((phrase) => phrase
+    .setMetadata({ originalWord: 'porn' })
+    .addPattern(Pattern_1.pattern `|prn|`)
+    .addPattern(Pattern_1.pattern `porn`)
+    .addWhitelistedTerm('p orna'))
+    .addPhrase((phrase) => phrase.setMetadata({ originalWord: 'hentai' }).addPattern(Pattern_1.pattern `h[e][e]ntai`))
+    .addPhrase((phrase) => phrase.setMetadata({ originalWord: 'pussy' }).addPattern(Pattern_1.pattern `p[u]ssy`))
+    .addPhrase((phrase) => phrase
+    .setMetadata({ originalWord: 'vagina' })
+    .addPattern(Pattern_1.pattern `vagina`)
+    .addPattern(Pattern_1.pattern `|v[?]gina`))
+    .addPhrase((phrase) => phrase
+    .setMetadata({ originalWord: 'penis' })
+    .addPattern(Pattern_1.pattern `pe[e]nis`)
+    .addPattern(Pattern_1.pattern `|pnis`)
+    .addWhitelistedTerm('pen is'))
+    .addPhrase((phrase) => phrase
+    .setMetadata({ originalWord: 'rape' })
+    .addPattern(Pattern_1.pattern `|rape`)
+    .addPattern(Pattern_1.pattern `|rapis[s]t`))
+    .addPhrase((phrase) => phrase.setMetadata({ originalWord: 'retard' }).addPattern(Pattern_1.pattern `retard`))
+    .addPhrase((phrase) => phrase.setMetadata({ originalWord: 'scat' }).addPattern(Pattern_1.pattern `|s[s]cat|`))
+    .addPhrase((phrase) => phrase.setMetadata({ originalWord: 'slut' }).addPattern(Pattern_1.pattern `s[s]lut`))
+    .addPhrase((phrase) => phrase.setMetadata({ originalWord: 'semen' }).addPattern(Pattern_1.pattern `|s[s]e[e]me[e]n`))
+    .addPhrase((phrase) => phrase
+    .setMetadata({ originalWord: 'sex' })
+    .addPattern(Pattern_1.pattern `|s[s]e[e]x|`)
+    .addPattern(Pattern_1.pattern `|s[s]e[e]xy|`))
+    .addPhrase((phrase) => phrase
+    .setMetadata({ originalWord: 'tit' })
+    .addPattern(Pattern_1.pattern `|tit|`)
+    .addPattern(Pattern_1.pattern `|tits|`)
+    .addPattern(Pattern_1.pattern `|titt`)
+    .addPattern(Pattern_1.pattern `|tiddies`)
+    .addPattern(Pattern_1.pattern `|tities`))
+    .addPhrase((phrase) => phrase
+    .setMetadata({ originalWord: 'whore' })
+    .addPattern(Pattern_1.pattern `|wh[o]re|`)
+    .addPattern(Pattern_1.pattern `|who[o]res[s]|`)
+    .addWhitelistedTerm("who're"))
+    .addPhrase((phrase) => phrase.setMetadata({ originalWord: 'dildo' }).addPattern(Pattern_1.pattern `dildo`))
+    .addPhrase((phrase) => phrase.setMetadata({ originalWord: 'double penetration' }).addPattern(Pattern_1.pattern `double penetra`))
+    .addPhrase((phrase) => phrase.setMetadata({ originalWord: 'finger bang' }).addPattern(Pattern_1.pattern `fingerbang`))
+    .addPhrase((phrase) => phrase.setMetadata({ originalWord: 'hooker' }).addPattern(Pattern_1.pattern `hooker`))
+    .addPhrase((phrase) => phrase.setMetadata({ originalWord: 'jerk off' }).addPattern(Pattern_1.pattern `jerkoff`))
+    .addPhrase((phrase) => phrase.setMetadata({ originalWord: 'incest' }).addPattern(Pattern_1.pattern `incest`))
+    .addPhrase((phrase) => phrase.setMetadata({ originalWord: 'tranny' }).addPattern(Pattern_1.pattern `tranny`))
+    .addPhrase((phrase) => phrase.setMetadata({ originalWord: 'buttplug' }).addPattern(Pattern_1.pattern `buttplug`))
+    .addPhrase((phrase) => phrase
+    .setMetadata({ originalWord: 'cuck' })
+    .addPattern(Pattern_1.pattern `cuck`)
+    .addWhitelistedTerm('cuckoo'));
+
+
+/***/ }),
+
+/***/ 1690:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.TransformerSet = void 0;
+class TransformerSet {
+    constructor(transformers) {
+        this.transformers = transformers;
+        this.statefulTransformers = new Array(this.transformers.length);
+        for (let i = 0; i < this.transformers.length; i++) {
+            const transformer = this.transformers[i];
+            if (transformer.type === 1 /* Stateful */) {
+                this.statefulTransformers[i] = transformer.factory();
+            }
+        }
+    }
+    applyTo(char) {
+        let transformed = char;
+        for (let i = 0; i < this.transformers.length && transformed !== undefined; i++) {
+            const transformer = this.transformers[i];
+            if (transformer.type === 0 /* Simple */)
+                transformed = transformer.transform(transformed);
+            else
+                transformed = this.statefulTransformers[i].transform(transformed);
+        }
+        return transformed;
+    }
+    resetAll() {
+        for (let i = 0; i < this.transformers.length; i++) {
+            if (this.transformers[i].type === 1 /* Stateful */) {
+                this.statefulTransformers[i].reset();
+            }
+        }
+    }
+}
+exports.TransformerSet = TransformerSet;
+
+
+/***/ }),
+
+/***/ 181:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.createStatefulTransformer = exports.createSimpleTransformer = void 0;
+/**
+ * Creates a container holding the transformer function provided. Simple
+ * transformers are suitable for stateless transformations, e.g., a
+ * transformation that maps certain characters to others. For transformations
+ * that need to keep around state, see `createStatefulTransformer`.
+ *
+ * @example
+ * ```typescript
+ * function lowercaseToUppercase(char) {
+ *  return isLowercase(char) ? char - 32 : char;
+ * }
+ *
+ * const transformer = createSimpleTransformer(lowercaseToUppercase);
+ * const matcher = new RegExpMatcher({ ..., blacklistMatcherTransformers: [transformer] });
+ * ```
+ *
+ * @example
+ * ```typescript
+ * function ignoreAllNonDigitChars(char) {
+ *  return isDigit(char) ? char : undefined;
+ * }
+ *
+ * const transformer = createSimpleTransformer(ignoreAllNonDigitChars);
+ * const matcher = new RegExpMatcher({ ..., blacklistMatcherTransformers: [transformer] });
+ * ```
+ *
+ * @param transformer - Function that applies the transformation. It should
+ * accept one argument, the input character, and return the transformed
+ * character. A return value of `undefined` indicates that the character should
+ * be ignored.
+ * @returns A container holding the transformer, which can then be passed to the
+ * [[RegExpMatcher]] or the [[NfaMatcher]].
+ */
+function createSimpleTransformer(transformer) {
+    return { type: 0 /* Simple */, transform: transformer };
+}
+exports.createSimpleTransformer = createSimpleTransformer;
+/**
+ * Creates a container holding the stateful transformer. Stateful transformers
+ * are objects which satisfy the `StatefulTransformer` interface. They are
+ * suitable for transformations that require keeping around some state regarding
+ * the characters previously transformed in the text.
+ *
+ * @example
+ * ```typescript
+ * class IgnoreDuplicateCharactersTransformer implements StatefulTransformer {
+ *  private lastChar = -1;
+ *
+ *  public transform(char: number) {
+ *      if (char === this.lastChar) return undefined;
+ *      this.lastChar = char;
+ *      return char;
+ *  }
+ *
+ *  public reset() {
+ *      this.lastChar = -1;
+ *  }
+ * }
+ *
+ * const transformer = createStatefulTransformer(() => new IgnoreDuplicateCharactersTransformer());
+ * const matcher = new RegExpMatcher({ ..., blacklistMatcherTransformers: [transformer] });
+ * ```
+ *
+ * @param factory A function that returns an instance of the stateful
+ * transformer.
+ * @returns A container holding the stateful transformer, which can then be
+ * passed to the [[RegExpMatcher]] or the [[NfaMatcher]].
+ */
+function createStatefulTransformer(factory) {
+    return { type: 1 /* Stateful */, factory };
+}
+exports.createStatefulTransformer = createStatefulTransformer;
+
+
+/***/ }),
+
+/***/ 5674:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.collapseDuplicatesTransformer = void 0;
+const Char_1 = __nccwpck_require__(8861);
+const Transformers_1 = __nccwpck_require__(181);
+const transformer_1 = __nccwpck_require__(4063);
+/**
+ * Creates a transformer that collapses duplicate characters. This is useful for
+ * detecting variants of patterns in which a character is repeated to bypass
+ * detection.
+ *
+ * As an example, the pattern `hi` does not match `hhiii` by default, as the
+ * frequency of the characters does not match. With this transformer, `hhiii`
+ * would become `hi`, and would therefore match the pattern.
+ *
+ * **Application order**
+ *
+ * It is recommended that this transformer be applied after all other
+ * transformers. Using it before other transformers may have the effect of not
+ * catching duplicates of certain characters that were originally different but
+ * became the same after a series of transformations.
+ *
+ * **Warning**
+ *
+ * This transformer should be used with caution, as while it can make certain
+ * patterns match text that wouldn't have been matched before, it can also go
+ * the other way. For example, the pattern `hello` clearly matches `hello`, but
+ * with this transformer, by default, `hello` would become `helo` which does
+ * _not_ match. In this cases, the `customThresholds` option can be used to
+ * allow two `l`s in a row, making it leave `hello` unchanged.
+ *
+ * @example
+ * ```typescript
+ * // Collapse runs of the same character.
+ * const transformer = collapseDuplicatesTransformer();
+ * const matcher = new RegExpMatcher({ ..., blacklistMatcherTransformers: [transformer] });
+ * ```
+ *
+ * @example
+ * ```typescript
+ * // Collapse runs of characters other than 'a'.
+ * const transformer = collapseDuplicatesTransformer({ customThresholds: new Map([['a', Infinity]]) });
+ * const matcher = new RegExpMatcher({ ..., blacklistMatcherTransformers: [transformer] });
+ * ```
+ *
+ * @param options - Options for the transformer.
+ * @returns A container holding the transformer, which can then be passed to the
+ * [[RegExpMatcher]] or the [[NfaMatcher]].
+ */
+function collapseDuplicatesTransformer({ defaultThreshold = 1, customThresholds = new Map(), } = {}) {
+    const map = createCharacterToThresholdMap(customThresholds);
+    return Transformers_1.createStatefulTransformer(() => new transformer_1.CollapseDuplicatesTransformer({ defaultThreshold, customThresholds: map }));
+}
+exports.collapseDuplicatesTransformer = collapseDuplicatesTransformer;
+function createCharacterToThresholdMap(customThresholds) {
+    const map = new Map();
+    for (const [str, threshold] of customThresholds) {
+        if (threshold < 0)
+            throw new RangeError('Expected all thresholds to be non-negative.');
+        const char = Char_1.getAndAssertSingleCodePoint(str);
+        map.set(char, threshold);
+    }
+    return map;
+}
+
+
+/***/ }),
+
+/***/ 4063:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.CollapseDuplicatesTransformer = void 0;
+class CollapseDuplicatesTransformer {
+    constructor({ defaultThreshold, customThresholds }) {
+        this.remaining = -1;
+        this.lastChar = -1;
+        this.defaultThreshold = defaultThreshold;
+        this.customThresholds = customThresholds;
+    }
+    transform(char) {
+        if (char === this.lastChar) {
+            return this.remaining-- > 0 ? char : undefined;
+        }
+        const threshold = this.customThresholds.get(char) ?? this.defaultThreshold;
+        this.remaining = threshold - 1;
+        this.lastChar = char;
+        return threshold > 0 ? char : undefined;
+    }
+    reset() {
+        this.remaining = -1;
+        this.lastChar = -1;
+    }
+}
+exports.CollapseDuplicatesTransformer = CollapseDuplicatesTransformer;
+
+
+/***/ }),
+
+/***/ 5859:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.remapCharactersTransformer = void 0;
+const Char_1 = __nccwpck_require__(8861);
+const CharacterIterator_1 = __nccwpck_require__(8460);
+const Transformers_1 = __nccwpck_require__(181);
+/**
+ * Maps certain characters to other characters, leaving other characters
+ * unchanged.
+ *
+ * **Application order**
+ *
+ * It is recommended that this transformer be applied near the start of the
+ * transformer chain.
+ *
+ * @example
+ * ```typescript
+ * // Transform 'a' to 'b'.
+ * const transformer = remapCharactersTransformer({ 'b': 'a' });
+ * const matcher = new RegExpMatcher({ ..., blacklistMatcherTransformers: [transformer] });
+ * ```
+ *
+ * @example
+ * ```typescript
+ * // Transform '🅱️' to 'b', and use a map instead of an object as the argument.
+ * const transformer = remapCharactersTransformer(new Map([['b', '🅱️']]));
+ * const matcher = new RegExpMatcher({ ..., blacklistMatcherTransformers: [transformer] });
+ * ```
+ *
+ * @example
+ * ```typescript
+ * // Transform '🇴' and '0' to 'o'.
+ * const transformer = remapCharactersTransformer({ o: '🇴0' });
+ * const matcher = new RegExpMatcher({ ..., blacklistMatcherTransformers: [transformer] });
+ * ```
+ *
+ * @param mapping - A map/object mapping certain characters to others.
+ * @returns A container holding the transformer, which can then be passed to the
+ * [[RegExpMatcher]] or the [[NfaMatcher]].
+ * @see [[resolveConfusablesTransformer | Transformer that handles confusable
+ * Unicode characters]]
+ * @see [[resolveLeetSpeakTransformer | Transformer that handles leet-speak]]
+ */
+function remapCharactersTransformer(mapping) {
+    const map = createOneToOneMap(mapping);
+    return Transformers_1.createSimpleTransformer((c) => map.get(c) ?? c);
+}
+exports.remapCharactersTransformer = remapCharactersTransformer;
+function createOneToOneMap(mapping) {
+    const map = new Map();
+    const iterable = mapping instanceof Map ? mapping.entries() : Object.entries(mapping);
+    for (const [original, equivalents] of iterable) {
+        const originalChar = Char_1.getAndAssertSingleCodePoint(original);
+        const iter = new CharacterIterator_1.CharacterIterator(equivalents);
+        for (const equivalent of iter)
+            map.set(equivalent, originalChar);
+    }
+    return map;
+}
+
+
+/***/ }),
+
+/***/ 757:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.confusables = void 0;
+/**
+ * Maps confusable Unicode characters to their normalized equivalents.
+ *
+ * @copyright
+ * The data here is taken from the
+ * [confusables](https://github.com/gc/confusables) library.
+ *
+ * ```text
+ * # The MIT License (MIT)
+ *
+ * Copyright © 2019 https://github.com/gc/
+ *
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the “Software”), to deal in the Software without
+ * restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following
+ * conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+ * OTHER DEALINGS IN THE SOFTWARE.
+ * ```
+ */
+exports.confusables = new Map([
+    [' ', ' '],
+    ['0', '⓿'],
+    ['1', '⓵➊⑴¹𝟏𝟙１𝟷𝟣⒈𝟭1➀₁①❶⥠'],
+    ['2', '⓶⒉⑵➋ƻ²ᒿ𝟚２𝟮𝟤ᒾ𝟸Ƨ𝟐②ᴤ₂➁❷ᘝƨ'],
+    ['3', '³ⳌꞫ𝟑ℨ𝟛𝟯𝟥Ꝫ➌ЗȜ⓷ӠƷ３𝟹⑶⒊ʒʓǯǮƺ𝕴ᶾзᦡ➂③₃ᶚᴣᴟ❸ҘҙӬӡӭӟӞ'],
+    ['4', '➍ҶᏎ𝟜ҷ⓸ҸҹӴӵᶣ４чㄩ⁴➃₄④❹Ӌ⑷⒋'],
+    ['5', '𝟱⓹➎Ƽ𝟓𝟻𝟝𝟧５➄₅⑤⁵❺ƽ⑸⒌'],
+    ['6', 'ⳒᏮ𝟞𝟨𝟔➏⓺Ϭϭ⁶б６ᧈ⑥➅₆❻⑹⒍'],
+    ['7', '⓻𐓒➐７⁷⑦₇❼➆⑺⒎'],
+    ['8', '𐌚➑⓼８𝟠𝟪৪⁸₈𝟴➇⑧❽𝟾𝟖⑻⒏'],
+    ['9', 'ꝮⳊ⓽➒੧৭୨９𝟫𝟿𝟗⁹₉Գ➈⑨❾⑼⒐'],
+    ['A', '🄰Ꭿ𐊠𝕬𝜜𝐴ꓮᎪ𝚨ꭺ𝝖🅐Å∀🇦₳🅰𝒜𝘈𝐀𝔸дǺᗅⒶＡΑᾋᗩĂÃÅǍȀȂĀȺĄʌΛλƛᴀᴬДАልÄₐᕱªǞӒΆẠẢẦẨẬẮẰẲẴẶᾸᾹᾺΆᾼᾈᾉᾊᾌᾍᾎᾏἈἉἊἋἌἍἎἏḀȦǠӐÀÁÂẤẪ𝛢𝓐𝙰𝘼'],
+    ['a', '∂⍺ⓐձǟᵃᶏ⒜аɒａαȃȁคǎმäɑāɐąᾄẚạảǡầẵḁȧӑӓãåάὰάăẩằẳặᾀᾁᾂᾃᾅᾆᾰᾱᾲᾳᾴᶐᾶᾷἀἁἂἃἄἅἆἇᾇậắàáâấẫǻⱥ𝐚𝑎𝒂𝒶𝓪𝔞𝕒𝖆𝖺𝗮𝘢𝙖𝚊𝛂𝛼𝜶𝝰𝞪⍶'],
+    ['B', '𐌁𝑩𝕭🄱𐊡𝖡𝘽ꓐ𝗕𝘉𝜝𐊂𝚩𝐁𝛣𝝗𝐵𝙱𝔹Ᏼᏼ𝞑Ꞵ𝔅🅑฿𝓑ᗿᗾᗽ🅱ⒷＢвϐᗷƁ乃ßცჩ๖βɮБՅ๒ᙖʙᴮᵇጌḄℬΒВẞḂḆɃദᗹᗸᵝᙞᙟᙝᛒᙗᙘᴃ🇧'],
+    ['b', 'Ꮟ𝐛𝘣𝒷𝔟𝓫𝖇𝖻𝑏𝙗𝕓𝒃𝗯𝚋♭ᑳᒈｂᖚᕹᕺⓑḃḅҍъḇƃɓƅᖯƄЬᑲþƂ⒝ЪᶀᑿᒀᒂᒁᑾьƀҌѢѣᔎ'],
+    ['C', 'ᏟⲤ🄲ꓚ𐊢𐌂🅲𐐕🅒☾ČÇⒸＣↃƇᑕㄈ¢८↻ĈϾՇȻᙅᶜ⒞ĆҀĊ©टƆℂℭϹС匚ḈҪʗᑖᑡᑢᑣᑤᑥⅭ𝐂𝐶𝑪𝒞𝓒𝕮𝖢𝗖𝘊𝘾ᔍ'],
+    ['c', 'ⲥ𐐽ꮯĉｃⓒćčċçҁƈḉȼↄсርᴄϲҫ꒝ςɽϛ𝙲ᑦ᧚𝐜𝑐𝒄𝒸𝓬𝔠𝕔𝖈𝖼𝗰𝘤𝙘𝚌₵🇨ᥴᒼⅽ'],
+    ['D', 'Ꭰ🄳𝔡𝖉𝔻𝗗𝘋𝙳𝐷𝓓𝐃𝑫𝕯𝖣𝔇𝘿ꭰⅅ𝒟ꓓ🅳🅓ⒹＤƉᗪƊÐԺᴅᴰↁḊĐÞⅮᗞᑯĎḌḐḒḎᗫᗬᗟᗠᶛᴆ🇩'],
+    ['d', 'Ꮷꓒ𝓭ᵭ₫ԃⓓｄḋďḍḑḓḏđƌɖɗᵈ⒟ԁⅾᶁԀᑺᑻᑼᑽᒄᑰᑱᶑ𝕕𝖽𝑑𝘥𝒅𝙙𝐝𝗱𝚍ⅆ𝒹ʠժ'],
+    ['E', 'ꭼ🄴𝙀𝔼𐊆𝚬ꓰ𝝚𝞔𝓔𝑬𝗘🅴🅔ⒺΈＥƎἝᕮƐモЄᴇᴱᵉÉ乇ЁɆꂅ€ÈℰΕЕⴹᎬĒĔĖĘĚÊËԐỀẾỄỂẼḔḖẺȄȆẸỆȨḜḘḚἘἙἚἛἜῈΈӖὲέЀϵ🇪'],
+    ['e', '𝑒𝓮𝕖𝖊𝘦𝗲𝚎𝙚𝒆𝔢𝖾𝐞Ҿҿⓔｅ⒠èᧉéᶒêɘἔềếễ૯ǝєεēҽɛểẽḕḗĕėëẻěȅȇẹệȩɇₑęḝḙḛ℮еԑѐӗᥱёἐἑἒἓἕℯ'],
+    ['F', '🄵𐊇𝔉𝘍𐊥ꓝꞘ🅵🅕𝓕ⒻＦғҒᖴƑԲϝቻḞℱϜ₣🇫Ⅎ'],
+    ['f', '𝐟𝖋ⓕｆƒḟʃբᶠ⒡ſꊰʄ∱ᶂ𝘧'],
+    ['G', 'ꓖᏳ🄶Ꮐᏻ𝔾𝓖𝑮𝕲ꮐ𝒢𝙂𝖦𝙶𝔊𝐺𝐆🅶🅖ⒼＧɢƓʛĢᘜᴳǴĠԌĜḠĞǦǤԍ₲🇬⅁'],
+    ['g', 'ⓖｇǵĝḡğġǧģց૭ǥɠﻭﻮᵍ⒢ℊɡᧁ𝐠𝑔𝒈𝓰𝔤𝕘𝖌𝗀𝗴𝘨𝙜𝚐'],
+    ['H', '🄷𝜢ꓧ𝘏𝐻𝝜𝖧𐋏𝗛ꮋℍᎻℌⲎ𝑯𝞖🅷🅗ዞǶԋⒽＨĤᚺḢḦȞḤḨḪĦⱧҢңҤῊΉῌἨἩἪἫἭἮἯᾘᾙᾚᾛᾜᾝᾞᾟӉӈҥΉн卄♓𝓗ℋН𝐇𝙃𝙷ʜ𝛨Η𝚮ᕼӇᴴᵸ🇭'],
+    ['h', 'Һ⒣ђⓗｈĥḣḧȟḥḩḫẖħⱨհһከኩኪካɦℎ𝐡𝒉𝒽𝓱𝔥𝕙𝖍𝗁𝗵𝘩𝙝𝚑իʰᑋᗁɧんɥ'],
+    ['I', '🄸ЇꀤᏆ🅸🅘إﺇٳأﺃٲٵⒾＩ៸ÌÍÎĨĪĬİÏḮỈǏȈȊỊĮḬƗェエῘῙῚΊἸἹἺἻἼἽἾⅠΪΊɪᶦᑊᥣ𝛪𝐈𝙄𝙸𝓵𝙡𝐼ᴵ𝚰𝑰🇮'],
+    ['i', 'ⓘｉìíîĩīĭïḯỉǐȉȋịḭῐῑῒΐῖῗἰἱἲⅰⅼ∣ⵏ￨׀ا١۱ߊᛁἳἴἵɨіὶίᶖ𝔦𝚒𝝸𝗂𝐢𝕚𝖎𝗶𝘪𝙞ίⁱᵢ𝓲⒤'],
+    ['J', '🄹🅹🅙ⒿＪЈʝᒍנﾌĴʆวلյʖᴊᴶﻝጋɈⱼՂๅႱįᎫȷ丿ℐℑᒘᒙᒚᒛᒴᒵᒎᒏ🇯'],
+    ['j', 'ⓙｊϳʲ⒥ɉĵǰјڶᶨ𝒿𝘫𝗷𝑗𝙟𝔧𝒋𝗃𝓳𝕛𝚓𝖏𝐣'],
+    ['K', '𝗞🄺𝜥𝘒ꓗ𝙆𝕂Ⲕ𝔎𝛫Ꮶ𝞙𝒦🅺🅚₭ⓀＫĸḰќƘкҠκқҟӄʞҚКҡᴋᴷᵏ⒦ᛕЌጕḲΚKҜҝҞĶḴǨⱩϗӃ🇰'],
+    ['k', 'ⓚｋḱǩḳķḵƙⱪᶄ𝐤𝘬𝗄𝕜𝜅𝜘𝜿𝝒𝝹𝞌𝞳𝙠𝚔𝑘𝒌ϰ𝛋𝛞𝟆𝗸𝓴𝓀'],
+    ['L', '🄻𐐛Ⳑ𝑳𝙻𐑃𝓛ⳑꮮᏞꓡ🅻🅛ﺈ└ⓁւＬĿᒪ乚ՆʟꓶιԼᴸˡĹረḶₗΓլĻᄂⅬℒⱢᥧᥨᒻᒶᒷᶫﺎᒺᒹᒸᒫ⎳ㄥŁⱠﺄȽ🇱'],
+    ['l', 'ⓛｌŀĺľḷḹļӀℓḽḻłﾚɭƚɫⱡ|Ɩ⒧ʅǀוןΙІ｜ᶩӏ𝓘𝕀𝖨𝗜𝘐𝐥𝑙𝒍𝓁𝔩𝕝𝖑𝗅𝗹𝘭𝚕𝜤𝝞ı𝚤ɩι𝛊𝜄𝜾𝞲'],
+    ['M', '🄼𐌑𐊰ꓟⲘᎷ🅼🅜ⓂＭмṂ൱ᗰ州ᘻო๓♏ʍᙏᴍᴹᵐ⒨ḾМṀ௱ⅯℳΜϺᛖӍӎ𝐌𝑀𝑴𝓜𝔐𝕄𝕸𝖬𝗠𝘔𝙈𝙼𝚳𝛭𝜧𝝡𝞛🇲'],
+    ['m', '₥ᵯ𝖒𝐦𝗆𝔪𝕞𝓂ⓜｍനᙢ൩ḿṁⅿϻṃጠɱ៳ᶆ𝙢𝓶𝚖𝑚𝗺᧕᧗'],
+    ['N', '🄽ℕꓠ𝛮𝝢𝙽𝚴𝑵𝑁Ⲛ𝐍𝒩𝞜𝗡𝘕𝜨𝓝𝖭🅽₦🅝ЙЍⓃҋ៷ＮᴎɴƝᑎ几иՈռИהЛπᴺᶰŃ刀ክṄⁿÑПΝᴨոϖǸŇṆŅṊṈทŊӢӣӤӥћѝйᥢҊᴻ🇳'],
+    ['n', 'ח𝒏𝓷𝙣𝑛𝖓𝔫𝗇𝚗𝗻ᥒⓝήｎǹᴒńñᾗηṅňṇɲņṋṉղຖՌƞŋ⒩ภกɳпŉлԉȠἠἡῃդᾐᾑᾒᾓᾔᾕᾖῄῆῇῂἢἣἤἥἦἧὴήበቡቢባቤብቦȵ𝛈𝜂𝜼𝝶𝞰𝕟𝘯𝐧𝓃ᶇᵰᥥ∩'],
+    [
+        'O',
+        'ꄲ🄾𐊒𝟬ꓳⲞ𐐄𐊫𐓂𝞞🅞⍥◯ⵁ⊖０⊝𝝤Ѳϴ𝚶𝜪ѺӦӨӪΌʘ𝐎ǑÒŎÓÔÕȌȎㇿ❍ⓄＯὋロ❤૦⊕ØФԾΘƠᴼᵒ⒪ŐÖₒ¤◊Φ〇ΟОՕଠഠ௦סỒỐỖỔṌȬṎŌṐṒȮȰȪỎỜỚỠỞỢỌỘǪǬǾƟⵔ߀៰⍜⎔⎕⦰⦱⦲⦳⦴⦵⦶⦷⦸⦹⦺⦻⦼⦽⦾⦿⧀⧁⧂⧃ὈὉὊὌὍ',
+    ],
+    [
+        'o',
+        '𝚘𝛐𝗈𝞼ဝⲟ𝙤၀𐐬𝔬𐓪𝓸🇴⍤○ϙ🅾𝒪𝖮𝟢𝟶𝙾𝘰𝗼𝕠𝜊𝐨𝝾𝞸ᐤⓞѳ᧐ᥲðｏఠᦞՓòөӧóºōôǒȏŏồốȍỗổõσṍȭṏὄṑṓȯȫ๏ᴏőöѻоዐǭȱ০୦٥౦೦൦๐໐οօᴑ०੦ỏơờớỡởợọộǫøǿɵծὀὁόὸόὂὃὅ',
+    ],
+    ['P', '🄿ꓑ𝚸𝙿𝞠𝙋ꮲⲢ𝒫𝝦𝑃𝑷𝗣𝐏𐊕𝜬𝘗𝓟𝖯𝛲Ꮲ🅟Ҏ🅿ⓅＰƤᑭ尸Ṗրφքᴘᴾᵖ⒫ṔｱקРየᴩⱣℙΡῬᑸᑶᑷᑹᑬᑮ🇵₱'],
+    ['p', 'ҏ℗ⓟｐṕṗƥᵽῥρрƿǷῤ⍴𝓹𝓅𝐩𝑝𝒑𝔭𝕡𝖕𝗉𝗽𝘱𝙥𝚙𝛒𝝆𝞺𝜌𝞀'],
+    ['Q', '🅀🆀🅠ⓆＱℚⵕԚ𝐐𝑄𝑸𝒬𝓠𝚀𝘘𝙌𝖰𝕼𝔔𝗤🇶'],
+    ['q', 'ⓠｑգ⒬۹զᑫɋɊԛ𝗊𝑞𝘲𝕢𝚚𝒒𝖖𝐪𝔮𝓺𝙦'],
+    ['R', '℞℟ꭱᏒ𐒴ꮢᎡꓣ🆁🅡ⓇＲᴙȒʀᖇя尺ŔЯરƦᴿዪṚɌʁℛℜℝṘŘȐṜŖṞⱤ𝐑𝑅𝑹𝓡𝕽𝖱𝗥𝘙𝙍𝚁ᚱ🇷ᴚ'],
+    ['r', 'ⓡｒŕṙřȑȓṛṝŗгՐɾᥬṟɍʳ⒭ɼѓᴦᶉ𝐫𝑟𝒓𝓇𝓻𝔯𝕣𝖗𝗋𝗿𝘳𝙧ᵲґᵣ'],
+    ['S', '🅂ꇙ𝓢𝗦Ꮪ𝒮Ꮥ𝚂𝐒ꓢ𝖲𝔖𝙎𐊖𝕾𐐠𝘚𝕊𝑆𝑺🆂🅢ⓈＳṨŞֆՏȘˢ⒮ЅṠŠŚṤŜṦṢടᔕᔖᔢᔡᔣᔤ'],
+    ['s', 'ⓢꜱ𐑈ꮪｓśṥŝṡšṧʂṣṩѕşșȿᶊక𝐬𝑠𝒔𝓈𝓼𝔰𝕤𝖘𝗌𝘀𝘴𝙨𝚜ގ🇸'],
+    ['T', '🅃🆃𐌕𝚻𝛵𝕋𝕿𝑻𐊱𐊗𝖳𝙏🝨𝝩𝞣𝚃𝘛𝑇ꓔ⟙𝐓Ⲧ𝗧⊤𝔗Ꭲꭲ𝒯🅣⏇⏉ⓉＴтҬҭƬイŦԵτᴛᵀｲፕϮŤ⊥ƮΤТ下ṪṬȚŢṰṮ丅丁ᐪ𝛕𝜏𝝉𝞃𝞽𝓣ㄒ🇹ጥ'],
+    ['t', 'ⓣｔṫẗťṭțȶ੮էʇ†ţṱṯƭŧᵗ⒯ʈեƫ𝐭𝑡𝒕𝓉𝓽𝔱𝕥𝖙𝗍𝘁𝘵𝙩𝚝ナ'],
+    ['U', '🅄ꓴ𐓎꒤🆄🅤ŨŬŮᑗᑘǓǕǗǙⓊＵȖᑌ凵ƱմԱꓵЦŪՄƲᙀᵁᵘ⒰ŰપÜՍÙÚÛṸṺǛỦȔƯỪỨỮỬỰỤṲŲṶṴɄᥩᑧ∪ᘮ⋃𝐔𝑈𝑼𝒰𝓤𝔘𝕌𝖀𝖴𝗨𝘜𝙐𝚄🇺'],
+    ['u', 'ὺύⓤｕùũūừṷṹŭǖữᥙǚǜὗυΰนսʊǘǔúůᴜűųยûṻцሁüᵾᵤµʋủȕȗưứửựụṳṵʉῠῡῢΰῦῧὐὑϋύὒὓὔὕὖᥔ𝐮𝑢𝒖𝓊𝓾𝔲𝕦𝖚𝗎ᶙ'],
+    ['V', '🅅ꓦ𝑽𝖵𝘝Ꮩ𝚅𝙑𝐕🆅🅥ⓋＶᐯѴᵛ⒱۷ṾⅴⅤṼ٧ⴸѶᐺᐻ🇻𝓥'],
+    ['v', 'ሀⓥｖ𝜐𝝊ṽṿ౮งѵעᴠνטᵥѷ៴ᘁ𝙫𝚟𝛎𝜈𝝂𝝼𝞶𝘷𝘃𝓿'],
+    ['W', '🅆ᏔᎳ𝑾ꓪ𝒲𝘞🆆Ⓦ🅦ｗＷẂᾧᗯᥕ山ѠຟచաЩШώщฬшᙎᵂʷ⒲ฝሠẄԜẀŴẆẈധᘺѿᙡƜ₩🇼'],
+    ['w', 'ẁꮃẃⓦ⍵ŵẇẅẘẉⱳὼὠὡὢὣωὤὥὦὧῲῳῴῶῷⱲѡԝᴡώᾠᾡᾢᾣᾤᾥᾦɯ𝝕𝟉𝞏'],
+    ['X', '🞨🞩🞪🅇🞫🞬𐌗Ⲭꓫ𝖃𝞦𝘟𐊐𝚾𝝬𝜲Ꭓ𐌢𝖷𝑋𝕏𝔛𐊴𝗫🆇🅧❌Ⓧ𝓧ＸẊ᙭χㄨ𝒳ӾჯӼҳЖΧҲᵡˣ⒳אሸẌꊼⅩХ╳᙮ᕁᕽⅹᚷⵝ𝙓𝚇乂𝐗🇽'],
+    ['x', 'ⓧｘхẋ×ₓ⤫⤬⨯ẍᶍ𝙭ӽ𝘹𝐱𝚡⨰ﾒ𝔁'],
+    ['Y', 'Ⲩ𝚈𝑌𝗬𝐘ꓬ𝒀𝜰𐊲🆈🅨ⓎＹὛƳㄚʏ⅄ϔ￥¥ՎϓγץӲЧЎሃŸɎϤΥϒҮỲÝŶỸȲẎỶỴῨῩῪΎὙὝὟΫΎӮӰҰұ𝕐🇾'],
+    ['y', '🅈ᎽᎩⓨｙỳýŷỹȳẏÿỷуყẙỵƴɏᵞɣʸᶌү⒴ӳӱӯўУʎ'],
+    ['Z', '🅉ꓜ𝗭𝐙☡Ꮓ𝘡🆉🅩ⓏＺẔƵ乙ẐȤᶻ⒵ŹℤΖŻŽẒⱫ🇿'],
+    ['z', 'ꮓⓩｚźẑżžẓẕƶȥɀᴢጊʐⱬᶎʑᙆ'],
+]);
+
+
+/***/ }),
+
+/***/ 474:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.resolveConfusablesTransformer = void 0;
+const remap_characters_1 = __nccwpck_require__(5859);
+const confusables_1 = __nccwpck_require__(757);
+/**
+ * Creates a transformer that maps confusable Unicode characters to their
+ * normalized equivalent. For example, `⓵`, `➊`, and `⑴` become `1` when using
+ * this transformer.
+ *
+ * **Application order**
+ *
+ * It is recommended that this transformer be applied near the start of the
+ * transformer chain.
+ *
+ * @example
+ * ```typescript
+ * const transformer = resolveConfusablesTransformer();
+ * const matcher = new RegExpMatcher({ ..., blacklistMatcherTransformers: [transformer] });
+ * ```
+ *
+ * @returns A container holding the transformer, which can then be passed to the
+ * [[RegExpMatcher]] or the [[NfaMatcher]].
+ */
+function resolveConfusablesTransformer() {
+    return remap_characters_1.remapCharactersTransformer(confusables_1.confusables);
+}
+exports.resolveConfusablesTransformer = resolveConfusablesTransformer;
+
+
+/***/ }),
+
+/***/ 7120:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.dictionary = void 0;
+exports.dictionary = new Map([
+    ['a', '@4'],
+    ['c', '('],
+    ['e', '3'],
+    ['i', '1|'],
+    ['o', '0'],
+    ['s', '$'],
+]);
+
+
+/***/ }),
+
+/***/ 2633:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.resolveLeetSpeakTransformer = void 0;
+const remap_characters_1 = __nccwpck_require__(5859);
+const dictionary_1 = __nccwpck_require__(7120);
+/**
+ * Creates a transformer that maps leet-speak characters to their normalized
+ * equivalent. For example, `$` becomes `s` when using this transformer.
+ *
+ * **Application order**
+ *
+ * It is recommended that this transformer be applied near the start of the
+ * transformer chain, but after similar transformers that map characters to
+ * other characters, such as the [[resolveConfusablesTransformer | transformer
+ * that resolves confusable Unicode characters]].
+ *
+ * @example
+ * ```typescript
+ * const transformer = resolveLeetSpeakTransformer();
+ * const matcher = new RegExpMatcher({ ..., blacklistMatcherTransformers: [transformer] });
+ * ```
+ *
+ * @returns A container holding the transformer, which can then be passed to the
+ * [[RegExpMatcher]] or the [[NfaMatcher]].
+ */
+function resolveLeetSpeakTransformer() {
+    return remap_characters_1.remapCharactersTransformer(dictionary_1.dictionary);
+}
+exports.resolveLeetSpeakTransformer = resolveLeetSpeakTransformer;
+
+
+/***/ }),
+
+/***/ 6458:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.skipNonAlphabeticTransformer = void 0;
+const Char_1 = __nccwpck_require__(8861);
+const Transformers_1 = __nccwpck_require__(181);
+/**
+ * Creates a transformer that skips non-alphabetic characters (`a`-`z`,
+ * `A`-`Z`). This is useful when matching text on patterns that are solely
+ * comprised of alphabetic characters (the pattern `hello` does not match
+ * `h.e.l.l.o` by default, but does with this transformer).
+ *
+ * **Application order**
+ *
+ * It is recommended that this transformer be applied near the end of the
+ * transformer chain.
+ *
+ * @example
+ * ```typescript
+ * const transformer = resolveLeetSpeakTransformer();
+ * const matcher = new RegExpMatcher({ ..., blacklistMatcherTransformers: [transformer] });
+ * ```
+ *
+ * @returns A container holding the transformer, which can then be passed to the
+ * [[RegExpMatcher]] or the [[NfaMatcher]].
+ */
+function skipNonAlphabeticTransformer() {
+    return Transformers_1.createSimpleTransformer((c) => (Char_1.isAlphabetic(c) ? c : undefined));
+}
+exports.skipNonAlphabeticTransformer = skipNonAlphabeticTransformer;
+
+
+/***/ }),
+
+/***/ 6336:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.toAsciiLowerCaseTransformer = void 0;
+const Char_1 = __nccwpck_require__(8861);
+const Transformers_1 = __nccwpck_require__(181);
+/**
+ * Creates a transformer that changes all ASCII alphabet characters to
+ * lower-case, leaving other characters unchanged.
+ *
+ * **Application order**
+ *
+ * It is recommended that this transformer be applied near the end of the
+ * transformer chain. Using it before other transformers may have the effect of
+ * making its changes useless as transformers applied after produce characters
+ * of varying cases.
+ *
+ * @returns A container holding the transformer, which can then be passed to the
+ * [[RegExpMatcher]] or the [[NfaMatcher]].
+ */
+function toAsciiLowerCaseTransformer() {
+    return Transformers_1.createSimpleTransformer((c) => (Char_1.isUpperCase(c) ? Char_1.invertCaseOfAlphabeticChar(c) : c));
+}
+exports.toAsciiLowerCaseTransformer = toAsciiLowerCaseTransformer;
+
+
+/***/ }),
+
+/***/ 8861:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.getAndAssertSingleCodePoint = exports.invertCaseOfAlphabeticChar = exports.isUpperCase = exports.isLowerCase = exports.isAlphabetic = exports.isDigit = exports.isWordChar = exports.convertSurrogatePairToCodePoint = exports.isLowSurrogate = exports.isHighSurrogate = void 0;
+function isHighSurrogate(char) {
+    return 55296 /* HighSurrogateStart */ <= char && char <= 56319 /* HighSurrogateEnd */;
+}
+exports.isHighSurrogate = isHighSurrogate;
+function isLowSurrogate(char) {
+    return 56320 /* LowSurrogateStart */ <= char && char <= 57343 /* LowSurrogateEnd */;
+}
+exports.isLowSurrogate = isLowSurrogate;
+// See https://unicodebook.readthedocs.io/unicode_encodings.html#utf-16-surrogate-pairs.
+function convertSurrogatePairToCodePoint(highSurrogate, lowSurrogate) {
+    return ((highSurrogate - 55296 /* HighSurrogateStart */) * 0x400 +
+        lowSurrogate -
+        56320 /* LowSurrogateStart */ +
+        0x10000);
+}
+exports.convertSurrogatePairToCodePoint = convertSurrogatePairToCodePoint;
+function isWordChar(char) {
+    return isDigit(char) || isAlphabetic(char);
+}
+exports.isWordChar = isWordChar;
+function isDigit(char) {
+    return 48 /* Zero */ <= char && char <= 57 /* Nine */;
+}
+exports.isDigit = isDigit;
+function isAlphabetic(char) {
+    return isLowerCase(char) || isUpperCase(char);
+}
+exports.isAlphabetic = isAlphabetic;
+function isLowerCase(char) {
+    return 97 /* LowerA */ <= char && char <= 122 /* LowerZ */;
+}
+exports.isLowerCase = isLowerCase;
+function isUpperCase(char) {
+    return 65 /* UpperA */ <= char && char <= 90 /* UpperZ */;
+}
+exports.isUpperCase = isUpperCase;
+// Input must be a lower-case or upper-case ASCII alphabet character.
+function invertCaseOfAlphabeticChar(char) {
+    return char ^ 0x20;
+}
+exports.invertCaseOfAlphabeticChar = invertCaseOfAlphabeticChar;
+// Asserts that the string is comprised of one and only one code point,
+// then returns said code point.
+function getAndAssertSingleCodePoint(str) {
+    if ([...str].length !== 1)
+        throw new RangeError(`Expected the input string to be one code point in length.`);
+    return str.codePointAt(0);
+}
+exports.getAndAssertSingleCodePoint = getAndAssertSingleCodePoint;
+
+
+/***/ }),
+
+/***/ 8460:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.CharacterIterator = void 0;
+const Char_1 = __nccwpck_require__(8861);
+class CharacterIterator {
+    constructor(input) {
+        this.lastPosition = -1;
+        this.currentPosition = 0;
+        this._lastWidth = 0;
+        this._input = input ?? '';
+    }
+    get input() {
+        return this._input;
+    }
+    setInput(input) {
+        this._input = input;
+        this.reset();
+        return this;
+    }
+    reset() {
+        this.lastPosition = -1;
+        this.currentPosition = 0;
+        this._lastWidth = 0;
+    }
+    next() {
+        if (this.done)
+            return { done: true, value: undefined };
+        this.lastPosition = this.currentPosition;
+        const char = this._input.charCodeAt(this.currentPosition++);
+        this._lastWidth = 1;
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+        if (this.done || !Char_1.isHighSurrogate(char))
+            return { done: false, value: char };
+        // Do we have a surrogate pair?
+        const next = this._input.charCodeAt(this.currentPosition);
+        if (Char_1.isLowSurrogate(next)) {
+            this._lastWidth++;
+            this.currentPosition++;
+            return { done: false, value: Char_1.convertSurrogatePairToCodePoint(char, next) };
+        }
+        return { done: false, value: char };
+    }
+    // Position of the iterator; equals the start index of the last character consumed.
+    // -1 if no characters were consumed yet.
+    get position() {
+        return this.lastPosition;
+    }
+    // Width of the last character consumed; 2 if it was a surrogate pair and 1 otherwise.
+    // 0 if no characters were consumed yet.
+    get lastWidth() {
+        return this._lastWidth;
+    }
+    get done() {
+        return this.currentPosition >= this._input.length;
+    }
+    [Symbol.iterator]() {
+        return this;
+    }
+}
+exports.CharacterIterator = CharacterIterator;
+
+
+/***/ }),
+
+/***/ 5376:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.CircularBuffer = void 0;
+class CircularBuffer {
+    // Note: calling this constructor with a certain capacity does not guarantee that
+    // the circular buffer's capacity will be exactly that value. It is only guaranteed
+    // that the circular buffer can store at least that capacity.
+    constructor(capacity) {
+        this._length = 0;
+        this.head = 0;
+        // Round up to the nearest higher power of two.
+        this.data = new Array(1 << Math.ceil(Math.log2(capacity)));
+        this.mask = this.capacity - 1;
+    }
+    push(value) {
+        this.data[this.head + (this._length & this.mask)] = value;
+        if (this._length === this.capacity) {
+            this.head = (this.head + 1) & this.mask;
+        }
+        else {
+            this._length++;
+        }
+    }
+    get(index) {
+        if (index < 0 || index >= this._length)
+            return undefined;
+        return this.data[(this.head + index) & this.mask];
+    }
+    set(index, value) {
+        this.data[(this.head + index) & this.mask] = value;
+    }
+    clear() {
+        this.head = 0;
+        this._length = 0;
+        this.data.fill(undefined);
+    }
+    get capacity() {
+        return this.data.length;
+    }
+    get length() {
+        return this._length;
+    }
+    *[Symbol.iterator]() {
+        for (let i = this.head; i < this.head + this._length; i++) {
+            yield this.data[i & this.mask];
+        }
+    }
+}
+exports.CircularBuffer = CircularBuffer;
+
+
+/***/ }),
+
+/***/ 2990:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.compareIntervals = void 0;
+function compareIntervals(lowerBound0, upperBound0, lowerBound1, upperBound1) {
+    if (lowerBound0 < lowerBound1)
+        return -1;
+    if (lowerBound1 < lowerBound0)
+        return 1;
+    if (upperBound0 < upperBound1)
+        return -1;
+    if (upperBound1 < upperBound0)
+        return 1;
+    return 0;
+}
+exports.compareIntervals = compareIntervals;
+
+
+/***/ }),
+
+/***/ 8844:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.Queue = void 0;
+/**
+ * A first-in first-out queue.
+ *
+ * @copyright
+ * This is a derivative work of https://github.com/invertase/denque.
+ *
+ * ```text
+ * Copyright (c) 2018 Mike Diarmid (Salakar) <mike.diarmid@gmail.com>
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this library except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ```
+ */
+class Queue {
+    constructor() {
+        this.data = new Array(4).fill(undefined);
+        this.mask = 0x3;
+        this.head = 0;
+        this.tail = 0;
+    }
+    push(value) {
+        this.data[this.tail] = value;
+        this.tail = (this.tail + 1) & this.mask;
+        if (this.tail === this.head)
+            this.growArray();
+    }
+    shift() {
+        if (this.head === this.tail)
+            return undefined;
+        const value = this.data[this.head];
+        this.data[this.head] = undefined;
+        this.head = (this.head + 1) & this.mask;
+        return value;
+    }
+    get length() {
+        if (this.head <= this.tail)
+            return this.tail - this.head;
+        return this.capacity - (this.head - this.tail);
+    }
+    get capacity() {
+        return this.data.length;
+    }
+    growArray() {
+        if (this.head > 0) {
+            // Create a new array from the data, but in proper order.
+            const inOrder = this.data.slice(this.head, this.capacity);
+            inOrder.push(...this.data.slice(0, this.tail));
+            this.data = inOrder;
+            this.head = 0;
+        }
+        this.tail = this.capacity;
+        this.data.length <<= 1;
+        this.mask = (this.mask << 1) | 1;
+    }
+}
+exports.Queue = Queue;
+
+
+/***/ }),
+
 /***/ 4294:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
@@ -10618,12 +14076,23 @@ const core = __nccwpck_require__(2186)
 const FileUtils = __nccwpck_require__(4056)
 const ActionUtils = __nccwpck_require__(778)
 const ArrayUtils = __nccwpck_require__(1970)
+const {
+  RegExpMatcher,
+  TextCensor,
+  englishDataset,
+  englishRecommendedTransformers,
+} = __nccwpck_require__(8795)
 
 async function run() {
   try {
     if (FileUtils.isWorkspaceEmpty()) {
       throw new Error('Workspace is empty')
     }
+
+    const matcher = new RegExpMatcher({
+      ...englishDataset.build(),
+      ...englishRecommendedTransformers,
+    })
 
     let find = 'fuck'
     let replace = ActionUtils.getInput('replace', { required: false })
@@ -10644,12 +14113,17 @@ async function run() {
     core.info(`Found ${files.length} file(s). Checking them out:`)
 
     let modifiedFiles = 0
+    const fudgeStrategy = () => 'cute'
+    const censor = new TextCensor().setStrategy(fudgeStrategy)
 
     files.forEach((file) => {
       core.info(`Processing: ${file}`)
 
       let content = FileUtils.readContent(file)
-      let newContent = content.replace(find, replace)
+
+      const input = content
+      const matches = matcher.getAllMatches(input)
+      const newContent = censor.applyTo(input, matches)
 
       if (content != newContent) {
         modifiedFiles++
