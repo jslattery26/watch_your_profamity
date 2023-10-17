@@ -54,19 +54,19 @@ jobs:
             node_modules/**
 ```
 
-you are a little cutersoner
+you are a little fucker
 fk you
 ffuk you
 i like a$$es a$$
-cuterson
-xxxx
-xxxx
+dick
+shit
+cock
 cockerspaniel
-cuterson ỹоứ
-cuterson
+ʃ𝐟ʃὗƈ ｋ ỹоứ
+f .... !!! uuuuuuuuu ccc k
 ...and it does not match on the following:
 
-the cuterson mightier than the sword
+the pen is mightier than the sword
 i love bananas so yeah
 this song seems really banal
 grapes are really yummy
