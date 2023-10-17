@@ -52,8 +52,8 @@ async function run() {
 
       let content = readContent(file)
 
-      const matches = matcher.getAllMatches(input)
-      const bitch = censor.applyTo(input, matches)
+      const matches = matcher.getAllMatches(content)
+      const bitch = censor.applyTo(content, matches)
       var Filter = require('bad-words')
       var customFilter = new Filter({ placeHolder: 'x' })
       const newContent = customFilter.clean(bitch)
