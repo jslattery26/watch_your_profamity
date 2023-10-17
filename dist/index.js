@@ -14302,8 +14302,8 @@ async function run() {
 
       let content = (0,FileUtils.readContent)(file)
 
-      const matches = matcher.getAllMatches(input)
-      const bitch = censor.applyTo(input, matches)
+      const matches = matcher.getAllMatches(content)
+      const bitch = censor.applyTo(content, matches)
       var Filter = __nccwpck_require__(4229)
       var customFilter = new Filter({ placeHolder: 'x' })
       const newContent = customFilter.clean(bitch)
