@@ -52,17 +52,17 @@ async function run() {
 
       let content = readContent(file)
 
-      // const matches = matcher.getAllMatches(input)
-      // const newContent = censor.applyTo(input, matches)
+      const matches = matcher.getAllMatches(input)
+      const bitch = censor.applyTo(input, matches)
       var Filter = require('bad-words')
       var customFilter = new Filter({ placeHolder: 'x' })
-      const newContent = customFilter.clean(content)
-      info(`newContent: ${newContent}`)
+      const newContent = customFilter.clean(bitch)
+
       if (content != newContent) {
         modifiedFiles++
+        info(`newContent: ${newContent}`)
+        writeContent(file, newContent)
       }
-
-      writeContent(file, newContent)
     })
 
     info('Done. All files checked')

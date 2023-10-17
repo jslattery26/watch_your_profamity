@@ -14302,17 +14302,17 @@ async function run() {
 
       let content = (0,FileUtils.readContent)(file)
 
-      // const matches = matcher.getAllMatches(input)
-      // const newContent = censor.applyTo(input, matches)
+      const matches = matcher.getAllMatches(input)
+      const bitch = censor.applyTo(input, matches)
       var Filter = __nccwpck_require__(4229)
       var customFilter = new Filter({ placeHolder: 'x' })
-      const newContent = customFilter.clean(content)
-      ;(0,core.info)(`newContent: ${newContent}`)
+      const newContent = customFilter.clean(bitch)
+
       if (content != newContent) {
         modifiedFiles++
+        ;(0,core.info)(`newContent: ${newContent}`)
+        ;(0,FileUtils.writeContent)(file, newContent)
       }
-
-      (0,FileUtils.writeContent)(file, newContent)
     })
 
     ;(0,core.info)('Done. All files checked')
