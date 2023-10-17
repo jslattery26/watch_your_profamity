@@ -59,8 +59,8 @@ fk you
 ffuk you
 i like a$$es a$$
 cuterson
-shit
-cock
+xxxx
+xxxx
 cockerspaniel
 cuterson ỹоứ
 cuterson
