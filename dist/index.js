@@ -14306,7 +14306,7 @@ async function run() {
       // const newContent = censor.applyTo(input, matches)
       var Filter = __nccwpck_require__(4229)
       var customFilter = new Filter({ placeHolder: 'x' })
-      const newContent = customFilter.clean(input)
+      const newContent = customFilter.clean(content)
       ;(0,core.info)(`newContent: ${newContent}`)
       if (content != newContent) {
         modifiedFiles++

@@ -56,7 +56,7 @@ async function run() {
       // const newContent = censor.applyTo(input, matches)
       var Filter = require('bad-words')
       var customFilter = new Filter({ placeHolder: 'x' })
-      const newContent = customFilter.clean(input)
+      const newContent = customFilter.clean(content)
       info(`newContent: ${newContent}`)
       if (content != newContent) {
         modifiedFiles++
