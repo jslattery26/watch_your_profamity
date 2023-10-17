@@ -57,7 +57,7 @@ async function run() {
       // const matches = matcher.getAllMatches(input)
       // const newContent = censor.applyTo(input, matches)
       const newContent = filter.clean(input)
-
+      info(`newContent: ${newContent}`)
       if (content != newContent) {
         modifiedFiles++
       }
