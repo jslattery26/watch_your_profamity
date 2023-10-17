@@ -13,6 +13,8 @@ import {
   searchFiles,
   writeContent,
 } from './utils/FileUtils'
+var Filter = require('bad-words'),
+  filter = new Filter()
 
 async function run() {
   try {
@@ -52,9 +54,9 @@ async function run() {
 
       let content = readContent(file)
 
-      const input = content
-      const matches = matcher.getAllMatches(input)
-      const newContent = censor.applyTo(input, matches)
+      // const matches = matcher.getAllMatches(input)
+      // const newContent = censor.applyTo(input, matches)
+      const newContent = filter.clean(input)
 
       if (content != newContent) {
         modifiedFiles++
