@@ -1,24 +1,17 @@
-const core = require("@actions/core");
+import { getInput as _getInput } from '@actions/core'
 
-module.exports = class ActionUtils {
+export function getInputAsArray(name, options) {
+  return getInput(name, options)
+    .split('\n')
+    .map((s) => s.trim())
+    .filter((x) => x !== '')
+}
+export function getInput(name, options = {}) {
+  let input = _getInput(name, options)
 
-    static getInputAsArray(name, options) {
+  if (input) {
+    input = input.trim()
+  }
 
-        return ActionUtils
-            .getInput(name, options)
-            .split("\n")
-            .map(s => s.trim())
-            .filter(x => x !== "");
-    }
-
-    static getInput(name, options = {}) {
-
-        let input = core.getInput(name, options);
-
-        if (input) {
-            input = input.trim();
-        }
-
-        return input;
-    }
+  return input
 }

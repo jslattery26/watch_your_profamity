@@ -1,21 +1,16 @@
-module.exports = class ArrayUtils {
+export function split(array, separator = ',') {
+  let result = []
 
-    static split(array, separator = ",") {
+  array.forEach((e) => {
+    result = [...result, ...splitFromString(e, separator)]
+  })
 
-        let result = [];
+  return result
+}
 
-        array.forEach(e => {
-            result = [...result, ...ArrayUtils.splitFromString(e, separator)];
-        });
-
-        return result;
-    }
-
-    static splitFromString(str, separator = ",") {
-
-        return str
-            .split(separator)
-            .map(s => s.trim())
-            .filter(x => x !== "");
-    }
+export function splitFromString(str, separator = ',') {
+  return str
+    .split(separator)
+    .map((s) => s.trim())
+    .filter((x) => x !== '')
 }

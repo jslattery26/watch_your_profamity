@@ -1,24 +1,14 @@
 import { info, setFailed, setOutput } from '@actions/core'
-import {
-  RegExpMatcher,
-  TextCensor,
-  englishDataset,
-  englishRecommendedTransformers,
-} from 'obscenity'
-import { getInput, getInputAsArray } from './utils/ActionUtils'
-import { split } from './utils/ArrayUtils'
-import {
-  isWorkspaceEmpty,
-  readContent,
-  searchFiles,
-  writeContent,
-} from './utils/FileUtils'
+import { RegExpMatcher, TextCensor, englishDataset, englishRecommendedTransformers } from 'obscenity'
+import { getInput, getInputAsArray } from './utils/ActionUtils.js'
+import { split } from './utils/ArrayUtils.js'
+import { readContent, searchFiles } from './utils/FileUtils.js'
 
 async function run() {
   try {
-    if (isWorkspaceEmpty()) {
-      throw new Error('Workspace is empty')
-    }
+    // if (isWorkspaceEmpty()) {
+    //   throw new Error('Workspace is empty')
+    // }
 
     const matcher = new RegExpMatcher({
       ...englishDataset.build(),

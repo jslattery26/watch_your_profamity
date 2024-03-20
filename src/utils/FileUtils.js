@@ -1,50 +1,57 @@
-const fs = require('fs')
-const path = require('path')
-const process = require('process')
-const { glob } = require('glob')
+import { existsSync, readdirSync, readFileSync, writeFileSync } from 'fs'
+import { glob } from 'glob'
+import { join } from 'path'
+import { env } from 'process'
 
-module.exports = class FileUtils {
-  static isWorkspaceEmpty() {
-    return FileUtils.isEmpty(FileUtils.getWorkspacePath())
+export function isWorkspaceEmpty() {
+  return isEmpty(getWorkspacePath())
+}
+
+export function getWorkspacePath() {
+  return env['GITHUB_WORKSPACE'] || ''
+}
+
+export function exists(fileOrPath) {
+  return existsSync(fileOrPath)
+}
+
+export function searchFiles(pattern = [], ignore = []) {
+  pattern = Array.isArray(pattern) ? pattern : [pattern]
+  ignore = Array.isArray(ignore) ? ignore : [ignore]
+
+  // const options = {
+  //   cwd: getWorkspacePath(),
+  //   ignore: ignore,
+  // }
+  const options = {
+    cwd: '/Users/jack/development/watch_your_profamity/',
+    ignore: ignore,
   }
 
-  static getWorkspacePath() {
-    return process.env['GITHUB_WORKSPACE'] || ''
-  }
-
-  static exists(fileOrPath) {
-    return fs.existsSync(fileOrPath)
-  }
-
-  static searchFiles(pattern = [], ignore = []) {
-    pattern = Array.isArray(pattern) ? pattern : [pattern]
-    ignore = Array.isArray(ignore) ? ignore : [ignore]
-
-    const options = {
-      cwd: FileUtils.getWorkspacePath(),
-      ignore: ignore,
-    }
-
+  try {
+    return glob.sync('*', options)
+  } catch (e) {
+    console.log(e)
     return glob.sync(pattern, options)
   }
+}
 
-  static isEmpty(path) {
-    if (!FileUtils.exists(path)) {
-      throw new Error(`${path} does not exist`)
-    }
-
-    return fs.readdirSync(path).length === 0
+export function isEmpty(path) {
+  if (!exists(path)) {
+    throw new Error(`${path} does not exist`)
   }
 
-  static readContent(file, encoding = 'utf-8') {
-    const filePath = path.join(FileUtils.getWorkspacePath(), file)
+  return readdirSync(path).length === 0
+}
 
-    return fs.readFileSync(filePath, { encoding })
-  }
+export function readContent(file, encoding = 'utf-8') {
+  const filePath = join(getWorkspacePath(), file)
 
-  static writeContent(file, content, encoding = 'utf-8') {
-    const filePath = path.join(FileUtils.getWorkspacePath(), file)
+  return readFileSync(filePath, { encoding })
+}
 
-    return fs.writeFileSync(filePath, content, encoding)
-  }
+export function writeContent(file, content, encoding = 'utf-8') {
+  const filePath = join(getWorkspacePath(), file)
+
+  return writeFileSync(filePath, content, encoding)
 }
