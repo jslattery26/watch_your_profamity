@@ -36611,7 +36611,12 @@ function searchFiles(pattern = [], ignore = []) {
     ignore: ignore,
   }
 
-  return glob.sync('/*', options)
+  try {
+    return glob.sync('*', options)
+  } catch (e) {
+    console.log(e)
+    return glob.sync(pattern, options)
+  }
 }
 
 function isEmpty(path) {
