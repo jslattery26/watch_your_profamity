@@ -36676,20 +36676,20 @@ async function run() {
       ;(0,core.info)(`Processing: ${file}`)
       try {
         let content = readContent(file)
+
+        const matches = matcher.getAllMatches(content)
+        const chicken = censor.applyTo(content, matches)
+        ;(0,core.info)('Found some swear wordsss!!!!! BUH OH! UH OH!!!!!')
+        if (matches.length > 0) {
+          (0,core.info)('You said: ' + matches.map((match) => content.substring(match.startIndex, match.endIndex + 1)).join(', ') + '!!!')
+          if (content != chicken) {
+            modifiedFiles++
+            ;(0,core.info)(`newContent: ${chicken}`)
+            writeContent(file, chicken)
+          }
+        }
       } catch (error) {
         (0,core.info)(`Error reading file: ${file}`)
-      }
-
-      const matches = matcher.getAllMatches(content)
-      const chicken = censor.applyTo(content, matches)
-      ;(0,core.info)('Found some swear wordsss!!!!! BUH OH! UH OH!!!!!')
-      if (matches.length > 0) {
-        (0,core.info)('You said: ' + matches.map((match) => content.substring(match.startIndex, match.endIndex + 1)).join(', ') + '!!!')
-        if (content != chicken) {
-          modifiedFiles++
-          ;(0,core.info)(`newContent: ${chicken}`)
-          writeContent(file, chicken)
-        }
       }
     })
 
