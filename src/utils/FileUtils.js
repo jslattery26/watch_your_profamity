@@ -19,21 +19,12 @@ export function searchFiles(pattern = [], ignore = []) {
   pattern = Array.isArray(pattern) ? pattern : [pattern]
   ignore = Array.isArray(ignore) ? ignore : [ignore]
 
-  // const options = {
-  //   cwd: getWorkspacePath(),
-  //   ignore: ignore,
-  // }
   const options = {
-    cwd: '/Users/jack/development/watch_your_profamity/',
+    cwd: getWorkspacePath(),
     ignore: ignore,
   }
 
-  try {
-    return glob.sync('*', options)
-  } catch (e) {
-    console.log(e)
-    return glob.sync(pattern, options)
-  }
+  return glob.sync('/*', options)
 }
 
 export function isEmpty(path) {

@@ -2,13 +2,13 @@ import { info, setFailed, setOutput } from '@actions/core'
 import { RegExpMatcher, TextCensor, englishDataset, englishRecommendedTransformers } from 'obscenity'
 import { getInput, getInputAsArray } from './utils/ActionUtils.js'
 import { split } from './utils/ArrayUtils.js'
-import { readContent, searchFiles } from './utils/FileUtils.js'
+import { readContent, searchFiles, writeContent } from './utils/FileUtils.js'
 
 async function run() {
   try {
-    // if (isWorkspaceEmpty()) {
-    //   throw new Error('Workspace is empty')
-    // }
+    if (isWorkspaceEmpty()) {
+      throw new Error('Workspace is empty')
+    }
 
     const matcher = new RegExpMatcher({
       ...englishDataset.build(),
@@ -43,15 +43,15 @@ async function run() {
       let content = readContent(file)
 
       const matches = matcher.getAllMatches(content)
-      const bitch = censor.applyTo(content, matches)
-      var Filter = require('bad-words')
-      var customFilter = new Filter({ placeHolder: 'x' })
-      const newContent = customFilter.clean(bitch)
-
-      if (content != newContent) {
-        modifiedFiles++
-        info(`newContent: ${newContent}`)
-        writeContent(file, newContent)
+      const chicken = censor.applyTo(content, matches)
+      info('Found some swear wordsss!!!!! BUH OH! UH OH!!!!!')
+      if (matches.length > 0) {
+        info('You said: ' + matches.map((match) => content.substring(match.startIndex, match.endIndex + 1)).join(', ') + '!!!')
+        if (content != chicken) {
+          modifiedFiles++
+          info(`newContent: ${chicken}`)
+          writeContent(file, chicken)
+        }
       }
     })
 
