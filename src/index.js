@@ -2,7 +2,7 @@ import { info, setFailed, setOutput } from '@actions/core'
 import { RegExpMatcher, TextCensor, englishDataset, englishRecommendedTransformers } from 'obscenity'
 import { getInput, getInputAsArray } from './utils/ActionUtils.js'
 import { split } from './utils/ArrayUtils.js'
-import { readContent, searchFiles, writeContent } from './utils/FileUtils.js'
+import { isWorkspaceEmpty, readContent, searchFiles, writeContent } from './utils/FileUtils.js'
 
 async function run() {
   try {

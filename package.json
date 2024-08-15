@@ -9,7 +9,7 @@
     "lint": "eslint .",
     "lint-fix": "npx eslint . --fix",
     "build": "ncc build src/index.js -o dist --source-map --license licenses.txt",
-    "all": "npm run lint-fix && npm run build",
+    "all": "npm run build",
     "run": "ncc build src/index.js -o dist --source-map --license licenses.txt && node dist/index.js",
     "test": "jest ./test --coverage",
     "update-dependencies": "ncu -u"
