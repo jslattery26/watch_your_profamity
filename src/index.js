@@ -41,7 +41,6 @@ async function run() {
       info(`Processing: ${file}`)
       try {
         let content = readContent(file)
-
         const matches = matcher.getAllMatches(content)
         const chicken = censor.applyTo(content, matches)
         info('Found some swear wordsss!!!!! BUH OH! UH OH!!!!!')
