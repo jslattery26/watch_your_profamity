@@ -18,9 +18,10 @@ export function exists(fileOrPath) {
 export function searchFiles(pattern = [], ignore = []) {
   pattern = Array.isArray(pattern) ? pattern : [pattern]
   ignore = Array.isArray(ignore) ? ignore : [ignore]
-
+  path = getWorkspacePath()
+  info('Searching for files in ' + path)
   const options = {
-    cwd: getWorkspacePath(),
+    cwd: path,
     ignore: ignore,
   }
 

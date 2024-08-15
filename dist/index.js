@@ -30222,12 +30222,12 @@ const defaultPlatform = (typeof process === 'object' && process
         process.env.__MINIMATCH_TESTING_PLATFORM__) ||
         process.platform
     : 'posix');
-const path = {
+const mjs_path = {
     win32: { sep: '\\' },
     posix: { sep: '/' },
 };
 /* c8 ignore stop */
-const sep = defaultPlatform === 'win32' ? path.win32.sep : path.posix.sep;
+const sep = defaultPlatform === 'win32' ? mjs_path.win32.sep : mjs_path.posix.sep;
 minimatch.sep = sep;
 const GLOBSTAR = Symbol('globstar **');
 minimatch.GLOBSTAR = GLOBSTAR;
@@ -36603,9 +36603,10 @@ function exists(fileOrPath) {
 function searchFiles(pattern = [], ignore = []) {
   pattern = Array.isArray(pattern) ? pattern : [pattern]
   ignore = Array.isArray(ignore) ? ignore : [ignore]
-
+  path = getWorkspacePath()
+  info('Searching for files in ' + path)
   const options = {
-    cwd: getWorkspacePath(),
+    cwd: path,
     ignore: ignore,
   }
 
@@ -36676,7 +36677,6 @@ async function run() {
       ;(0,core.info)(`Processing: ${file}`)
       try {
         let content = readContent(file)
-
         const matches = matcher.getAllMatches(content)
         const chicken = censor.applyTo(content, matches)
         ;(0,core.info)('Found some swear wordsss!!!!! BUH OH! UH OH!!!!!')
