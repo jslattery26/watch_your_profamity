@@ -39,8 +39,11 @@ async function run() {
 
     files.forEach((file) => {
       info(`Processing: ${file}`)
-
-      let content = readContent(file)
+      try {
+        let content = readContent(file)
+      } catch (error) {
+        info(`Error reading file: ${file}`)
+      }
 
       const matches = matcher.getAllMatches(content)
       const chicken = censor.applyTo(content, matches)
