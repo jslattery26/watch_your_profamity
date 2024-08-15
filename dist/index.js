@@ -30222,12 +30222,12 @@ const defaultPlatform = (typeof process === 'object' && process
         process.env.__MINIMATCH_TESTING_PLATFORM__) ||
         process.platform
     : 'posix');
-const mjs_path = {
+const path = {
     win32: { sep: '\\' },
     posix: { sep: '/' },
 };
 /* c8 ignore stop */
-const sep = defaultPlatform === 'win32' ? mjs_path.win32.sep : mjs_path.posix.sep;
+const sep = defaultPlatform === 'win32' ? path.win32.sep : path.posix.sep;
 minimatch.sep = sep;
 const GLOBSTAR = Symbol('globstar **');
 minimatch.GLOBSTAR = GLOBSTAR;
@@ -36603,7 +36603,7 @@ function exists(fileOrPath) {
 function searchFiles(pattern = [], ignore = []) {
   pattern = Array.isArray(pattern) ? pattern : [pattern]
   ignore = Array.isArray(ignore) ? ignore : [ignore]
-  path = getWorkspacePath()
+  const path = getWorkspacePath()
   info('Searching for files in ' + path)
   const options = {
     cwd: path,
