@@ -1,3 +1,4 @@
+import { info } from '@actions/core'
 import { existsSync, readdirSync, readFileSync, writeFileSync } from 'fs'
 import { glob } from 'glob'
 import { join } from 'path'

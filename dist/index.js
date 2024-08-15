@@ -36588,6 +36588,7 @@ const external_process_namespaceObject = require("process");
 
 
 
+
 function isWorkspaceEmpty() {
   return isEmpty(getWorkspacePath())
 }
@@ -36604,7 +36605,7 @@ function searchFiles(pattern = [], ignore = []) {
   pattern = Array.isArray(pattern) ? pattern : [pattern]
   ignore = Array.isArray(ignore) ? ignore : [ignore]
   const path = getWorkspacePath()
-  info('Searching for files in ' + path)
+  ;(0,core.info)('Searching for files in ' + path)
   const options = {
     cwd: path,
     ignore: ignore,
